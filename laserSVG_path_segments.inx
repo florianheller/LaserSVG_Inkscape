@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+    <name>Path Thickness Editor</name>
+    <id>org.inkscape.filter.lasersvg_path_segments</id>
+    <param name="tab" type="notebook">
+        <page name="Options" gui-text="Options">
+            <param name="material_thickness" type="int" min="0" max="25" gui-text="Material Thickness">3</param>
+        </page>
+        <page name="Help" gui-text="Help">
+            <label xml:space="preserve">This extension adds {thickness} labels to the path template of a LaserSVG file.</label>
+        </page>
+    </param>        
+
+    <effect>
+        <object-type>path</object-type>
+                <effects-menu>
+                    <submenu name="LaserSVG"/>
+                </effects-menu>
+    </effect>
+    <script>
+        <command location="inx" interpreter="python">laserSVG_path_segments.py</command>
+    </script>
+</inkscape-extension>
