@@ -27,6 +27,9 @@ from lxml import etree
 class LaserSVG(inkex.EffectExtension):
 
     selected_nodes = {}
+    LASER_NAMESPACE = "http://www.heller-web.net/lasersvg/"
+    LASER_PREFIX = "laser"
+    LASER = "{%s}" % LASER_NAMESPACE
 
     """Replace the selection's nodes with numbered dots according to the options"""
     def add_arguments(self, pars):
@@ -36,37 +39,32 @@ class LaserSVG(inkex.EffectExtension):
     def effect(self):
         # self.document and self.svg seem both to be the same etree
         # The trailing slash is important, otherwise inkscape doesn't load the file correctly
-        LASER_NAMESPACE = "http://www.heller-web.net/lasersvg/"
-        LASER_PREFIX = "laser"
-        LASER = "{%s}" % LASER_NAMESPACE
+
         # Register the namespace prefix both with etree and inkscape
-        etree.register_namespace("laser", LASER_NAMESPACE)
-        inkex.utils.NSS["laser"] = LASER_NAMESPACE
-        #inkex.utils.NSS["laser"] = "http://www.heller-web.net/lasersvg"
-        #self.document.register_namespace("laser","http://www.heller-web.net/lasersvg")
-        # inkex.utils.debug(self.document.getroot().nsmap)
+        etree.register_namespace("laser", self.LASER_NAMESPACE)
+        inkex.utils.NSS["laser"] = self.LASER_NAMESPACE
 
+
+        # Set/Update the global thickness in the SVG root node
+        self.document.getroot().set(inkex.addNS("thickness-adjust", self.LASER_PREFIX), self.options.material_thickness)
         
-        # inkex.utils.debug(inkex.utils.NSS)
-        # inkex.utils.debug(self.document.getroot().nsmap)
-        # inkex.utils.debug(inkex.addNS("thickness-adjust", "laser"))
-        # inkex.utils.debug(self.options.material_thickness)
+        # adjust the thickness on all elements 
+        self.adjust_element_thickness(self.options.material_thickness)
 
-        self.document.getroot().set(LASER+"material-thickness", self.options.material_thickness)
         # inkex.utils.debug(self.document.getroot().nsmap)
-        #inkex.utils.NSS["laser"] = "http://www.heller-web.net/lasersvg"
+
 
 
         #inkex.utils.debug(etree.tostring(self.document.getroot(),pretty_print=True))
         rect = self.svg.getElementById('rect214')
         # inkex.utils.debug(etree.tostring(rect))
         # inkex.utils.debug(inkex.addNS("thickness-adjust", "laser"))
-        rect.set(inkex.addNS("thickness-adjust", LASER_PREFIX),"width")
+        rect.set(inkex.addNS("thickness-adjust", self.LASER_PREFIX),"width")
         # #rect.set(XHTML + "thickness-adjust","width")
         # inkex.utils.debug(etree.tostring(rect))
 
-        # inkex.NSS["laser"] = XHTML_NAMESPACE
-        #inkex.addNS(self.svg, 'laserSVG')
+
+
 
         #for element in self.svg:
          #   inkex.utils.debug('{0}'.format(element))
@@ -95,6 +93,20 @@ class LaserSVG(inkex.EffectExtension):
         #         # check if a path template is already defined, if not, create one
         #         # place the {thickness} label at the repective place in the path template
 
+    def adjust_element_thickness(self, newThickness):
+        for node in self.document.getroot().iterfind(".//*[@%sthickness-adjust]" % self.LASER):
+            adjust_setting = node.get("%s:thickness-adjust" % self.LASER_PREFIX)
+            if adjust_setting == "width":
+                node.attrib["width"] = newThickness
+            elif adjust_setting == "height":
+                node.attrib["height"] = newThickness
+            elif adjust_setting == "both":
+                node.attrib["height"] = newThickness
+                node.attrib["width"] = newThickness
+            # inkex.utils.debug(node.get("laser:thickness-adjust"))    
+            # inkex.utils.debug(node.attrib)    
+        # nodes = self.document.getroot().findall(".//*[@%s:thickness-adjust]" % self.LASER_PREFIX)
+        
 
     def parse_selected_nodes(self, nodes):
         result = {}

@@ -7,7 +7,7 @@
             <param name="material_thickness" type="int" min="0" max="25" gui-text="Material Thickness">3</param>
         </page>
         <page name="Help" gui-text="Help">
-            <label xml:space="preserve">This extension adds {thickness} labels to the path template of a LaserSVG file. Select a segment that represent material thickness using the path editor and click apply.</label>
+            <label xml:space="preserve">This extension lets you control the main parameters of a LaserSVG file. It allows you to change the material thickness, kerf, and joint-type.</label>
         </page>
     </param>        
 
