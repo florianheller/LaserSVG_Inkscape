@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+    <name>Primitive Editor</name>
+    <id>org.inkscape.filter.lasersvg_primitives</id>
+    <param name="tab" type="notebook">
+        <page name="rectangles" gui-text="Rectangles">
+            <hbox>
+                <vbox>
+                    <label appearance="header">Thickness Adjustment</label>
+                    <hbox>
+                        <param type="optiongroup" name="rect_adjustment" gui-text="" appearance="radio">
+                            <item value="none">None</item>
+                            <item value="width">Width</item>
+                            <item value="height">Height</item>
+                            <item value="both">Both</item>
+                        </param>
+                        <vbox>
+                            <image>resize_none.svg</image>
+                            <image>resize_width.svg</image>
+                            <image>resize_height.svg</image>
+                            <image>resize_both.svg</image>
+                        </vbox>
+                    </hbox>
+                </vbox>
+                <separator />
+                <vbox>
+                    <label appearance="header">Adjustment Origin</label>
+                    <hbox> 
+                        <param type="optiongroup" name="rect_origin" gui-text="" appearance="radio">
+                            <item value="">Top Left</item> 
+                            <item value="tr">Top Right</item> 
+                            <item value="bl">Bottom Left</item>
+                            <item value="br">Bottom Right</item>
+                            <item value="center">Center</item>
+                        </param>
+                        <vbox>
+                            <image>resize_origin_tl.svg</image>
+                            <image>resize_origin_tr.svg</image>
+                            <image>resize_origin_bl.svg</image>
+                            <image>resize_origin_br.svg</image>
+                            <image>resize_origin_c.svg</image>
+                        </vbox>
+                    </hbox>
+                </vbox>
+            </hbox>
+        </page>
+
+        <page name="circles" gui-text="Circles">
+            <param name="material_thickness" type="int" min="0" max="25" gui-text="Material Thickness">3</param>
+        </page>
+        <page name="Help" gui-text="Help">
+            <label xml:space="preserve">This extension lets you adjust the LaserSVG parameters for SVG primitives, like circles, rectangles, ellipses. For Pahts, use the path editor.</label>
+        </page>
+    </param>        
+
+    <effect>
+        <object-type>path</object-type>
+                <effects-menu>
+                    <submenu name="LaserSVG"/>
+                </effects-menu>
+    </effect>
+    <script>
+        <command location="inx" interpreter="python">laserSVG_primitives.py</command>
+    </script>
+</inkscape-extension>
