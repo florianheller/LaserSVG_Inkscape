@@ -11,8 +11,8 @@
         </page>
     </param>        
 
-    <effect>
-        <object-type>path</object-type>
+    <effect needs-document="true" needs-live-preview="true" implements-custom-gui="true">
+        <object-type>all</object-type>
                 <effects-menu>
                     <submenu name="LaserSVG"/>
                 </effects-menu>
