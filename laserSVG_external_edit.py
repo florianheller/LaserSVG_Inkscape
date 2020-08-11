@@ -30,11 +30,16 @@ from gi.repository import Gtk
 
 class EditorWindow(Gtk.Window):
     def __init__(self, extension):
-        Gtk.Window.__init__(self, title="Button Demo")
+        Gtk.Window.__init__(self, title=type(extension))
         self.set_border_width(10)
 
         hbox = Gtk.Box(spacing=6)
         self.add(hbox)
+
+        inkex.utils.debug(extension.getImageFile())
+        image = Gtk.Image()
+        image.set_from_file(extension.options.input_file)
+        hbox.pack_start(image, True, True, 0)
 
         button = Gtk.Button.new_with_label("Click Me")
         button.connect("clicked", self.on_click_me_clicked)
@@ -71,7 +76,13 @@ class LaserSVG_Editor(inkex.EffectExtension):
         pars.add_argument("--tab", help="The selected UI-tab when OK was pressed")
 
     def effect(self):
-        inkex.utils.debug("Extension Run")
+
+        inkex.utils.debug(self.options.input_file)
+
+        win = EditorWindow(self)
+        win.connect("destroy", Gtk.main_quit)
+        win.show_all()
+        Gtk.main()
         # Doesn't seem to exist anymore
         # stdout = inkex.command.call('echo','test')
         # inkex.utils.debug(stdout)
@@ -83,12 +94,13 @@ class LaserSVG_Editor(inkex.EffectExtension):
         # image.set_from_file(self.options.input_file)
         # win.add(image)
 
-
+    def getImageFile(self):
+        return self.options.input_file
 
 if __name__ == '__main__':
     lEditor =  LaserSVG_Editor()
-    win = EditorWindow(lEditor)
-    win.connect("destroy", Gtk.main_quit)
-    win.show_all()
-    Gtk.main()
+    # win = EditorWindow(lEditor)
+    # win.connect("destroy", Gtk.main_quit)
+    # win.show_all()
+    # Gtk.main()
     lEditor.run()

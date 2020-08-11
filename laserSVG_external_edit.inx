@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
-    <name>Editor</name>
+    <name>External Editor</name>
     <id>org.inkscape.filter.lasersvg_editor</id>
     <param name="material_thickness" type="int" min="0" max="25" gui-text="Material Thickness" gui-hidden="true">3</param>
      
