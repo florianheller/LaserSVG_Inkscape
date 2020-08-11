@@ -42,6 +42,22 @@
                         </vbox>
                     </hbox>
                 </vbox>
+                <separator />
+                <vbox>
+                    <label appearance="header">Kerf Adjustment</label>
+                    <hbox> 
+                        <param type="optiongroup" name="rect_kerf_adjust" gui-text="" appearance="radio">
+                            <item value="">none</item> 
+                            <item value="grow">Grow</item> 
+                            <item value="shrink">Shrink</item>
+                        </param>
+                        <vbox>
+                            <image>resize_none.svg</image>
+                            <image>kerf_grow.svg</image>
+                            <image>kerf_shrink.svg</image>
+                        </vbox>
+                    </hbox>
+                </vbox>
             </hbox>
         </page>
 
