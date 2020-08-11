@@ -30,6 +30,7 @@ class LaserSVG(inkex.EffectExtension):
     """Replace the selection's nodes with numbered dots according to the options"""
     def add_arguments(self, pars):
         pars.add_argument("--material_thickness", default=3, help="The material thickness")
+        pars.add_argument("--process_run", default=1, help="The step number of the two-step process")
         pars.add_argument("--tab", help="The selected UI-tab when OK was pressed")
 
     def effect(self):

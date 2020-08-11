@@ -1,12 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
-    <name>Path Thickness Editor</name>
+    <name>Path Editor</name>
     <id>org.inkscape.filter.lasersvg_path_segments</id>
     <param name="tab" type="notebook">
-        <page name="Options" gui-text="Options">
-            <param name="material_thickness" type="int" min="0" max="25" gui-text="Material Thickness">3</param>
+        <page name="tag_all" gui-text="Tag all">
+                <param name="material_thickness" type="int" min="0" max="25" gui-text="Material Thickness">3</param>
+                <param name="desc1" type="description">This option turns all segments of the selected path that have the same length as the material thickness defined in the LaserSVG Control panel into parametric ones</param>
         </page>
-        <page name="Help" gui-text="Help">
+        <page name="tag_selection" gui-text="Tag selection">
+                <param name="desc1" type="description" xml:space="preserve">In this two-step process you can select which segments should be treated as being of material thickness or not. In the first step we will create a layer with all segments that have the same length as the material thickness as specified in the control panel. Delete all segments from that layer that should not be treated as being of material thickness. 
+
+In a second pass, this information will be mapped onto the original paths and the selection layer will be removed.
+
+</param>           
+                <param name="process_run" type="optiongroup" gui-text="Process step">
+                    <option value="1">Add selection layer</option>
+                    <option value="2">Apply selection</option>
+                </param>
+        </page>
+        <page name="tag_slots" gui-text="Tag slits">
+            <param name="desc2" type="description" xml:space="preserve">In this two-step process you can select which segments should be treated as being of material thickness or not. In contrast to the "Tag selection"-option, this algorithm looks only for slits and adjusts them such that they stay centered at their current location.
+
+In the first step we will create a layer with all segments that form a slit of the same width as the material thickness as specified in the control panel. Delete all segments from that layer that should not be treated as being of material thickness. 
+
+In a second pass, this information will be mapped onto the original paths and the selection layer will be removed.
+
+</param>           
+            <param name="process_run" type="optiongroup" gui-text="Process step">
+                <option value="1">Add selection layer</option>
+                <option value="2">Apply selection</option>
+            </param>
+        </page>
+        <page name="help" gui-text="Help">
             <label xml:space="preserve">This extension adds {thickness} labels to the path template of a LaserSVG file.</label>
         </page>
     </param>        
