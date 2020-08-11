@@ -4,7 +4,9 @@
     <id>org.inkscape.filter.lasersvg_control</id>
     <param name="tab" type="notebook">
         <page name="Options" gui-text="Options">
-            <param name="material_thickness" type="int" min="0" max="25" gui-text="Material Thickness">3</param>
+            <param name="material_thickness" type="int" min="0" max="100" gui-text="Material Thickness">3</param>
+            <param name="kerf_width" type="float" min="0" max="25" gui-text="Kerf">0</param>
+            <param type="bool" name="interactive" gui-text="Make file interactive">true</param>
         </page>
         <page name="Help" gui-text="Help">
             <label xml:space="preserve">This extension lets you control the main parameters of a LaserSVG file. It allows you to change the material thickness, kerf, and joint-type.</label>
