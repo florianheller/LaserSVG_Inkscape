@@ -33,7 +33,7 @@ class LaserSVG(inkex.EffectExtension):
 
     def add_arguments(self, pars):
         pars.add_argument("--kerf_width", default=0, help="The kerf width")
-        pars.add_argument("--interactive", default=true, help="whether or not to add the stylesheet and the JS references to the file")
+        pars.add_argument("--interactive", default=True, help="whether or not to add the stylesheet and the JS references to the file")
         pars.add_argument("--material_thickness", default=3, help="The material thickness")
         pars.add_argument("--tab", help="The selected UI-tab when OK was pressed")
 
