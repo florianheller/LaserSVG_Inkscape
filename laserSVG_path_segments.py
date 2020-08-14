@@ -22,16 +22,7 @@
 import math
 
 import inkex
-import types 
 from lxml import etree
-
-def __myStr__(mySelf):
-    return mySelf.letter + " " + " ".join(mySelf.args)
-
-def __myRepr__(mySelf):
-    return 'repr'    
-    # return self.name + "(" + ", ".join(*self.args)
-        # return "{{}}({})".format(self._argt(", ")).format(self.name, *self.args)
 
 class LaserSVG(inkex.EffectExtension):
 
@@ -119,12 +110,7 @@ class LaserSVG(inkex.EffectExtension):
                         newCommand = PathCommand.horz(pattern)
                     elif command.letter == 'v':
                         newCommand = self.vertTemplate(pattern)
-                    # inkex.utils.debug(newCommand.__str__)
-                        # newCommand.__str__ =  types.MethodType(__myStr__, super(inkex.paths.PathCommand, newCommand))
-                        # newCommand.__str__ = self.__myStr__
-                        # newCommand.__repr__ = types.MethodType(__myRepr__, newCommand)
-                   #inkex.utils.debug(newCommand.__str__.__name__)
-                    # inkex.utils.debug(newCommand.__str__())
+
                     template.append(newCommand)
                 else: #if the length does not match
                     template.append(command)
