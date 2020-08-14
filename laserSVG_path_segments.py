@@ -40,16 +40,24 @@ class LaserSVG(inkex.EffectExtension):
         etree.register_namespace("laser", self.LASER_NAMESPACE)
         inkex.utils.NSS["laser"] = self.LASER_NAMESPACE
 
-        inkex.utils.debug(self.options)
+        # inkex.utils.debug(self.options)
 
         # If nothing is selected, we can't do anything
         if not self.svg.selected:
             raise inkex.AbortExtension("Please select an object.")
 
+        inkex.utils.debug(self.document.getroot().keys())
+        inkex.utils.debug("{}material-thickness".format(self.LASER))
+        if not "{}material-thickness".format(self.LASER) in self.document.getroot().keys():
+            raise inkex.AbortExtension("Please set the material thickness in the LaserSVG parameter control panel first.")            
+
+        material_thickness = float(self.document.getroot().get("{}material-thickness".format(self.LASER)))
+        inkex.utils.debug(material_thickness)    
+
         for pathID in self.options.ids:
             path = self.svg.getElementById(pathID)
             if self.options.tab == "tag_all":
-                self.tagSegments(path, float(self.options.material_thickness))
+                self.tagSegments(path, float(material_thickness))
             elif self.options.tab == "tag_selection":    
                 self.selected_nodes = self.parse_selected_nodes(self.options.selected_nodes)
                 

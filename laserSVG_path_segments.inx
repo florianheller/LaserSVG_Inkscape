@@ -4,11 +4,9 @@
     <id>org.inkscape.filter.lasersvg_path_segments</id>
     <param name="tab" type="notebook">
         <page name="tag_all" gui-text="Tag all">
-                <param name="material_thickness" type="int" min="0" max="25" gui-text="Material Thickness">3</param>
                 <param name="desc1" type="description">This option turns all segments of the selected path that have the same length as the material thickness defined in the LaserSVG Control panel into parametric ones</param>
         </page>
         <page name="tag_selected" gui-text="Tag Selected">
-                <param name="material_thickness" type="int" min="0" max="25" gui-text="Material Thickness">3</param>
                 <param name="desc1" type="description">This option turns the tags the segment between the two selected path nodes as being of material thickness.</param>
         </page>
         <page name="tag_selection" gui-text="Tag selection">
