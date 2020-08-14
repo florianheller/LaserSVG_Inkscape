@@ -23,6 +23,7 @@ import math
 
 import inkex
 from lxml import etree
+import re
 
 class LaserSVG(inkex.EffectExtension):
 
@@ -74,7 +75,19 @@ class LaserSVG(inkex.EffectExtension):
             # inkex.utils.debug(node.get("laser:thickness-adjust"))    
             # inkex.utils.debug(node.attrib)    
             # nodes = self.document.getroot().findall(".//*[@%s:thickness-adjust]" % self.LASER_PREFIX)
- 
+        # And now the paths     
+        self.adjust_path_thickness(newThickness)
+
+
+    def adjust_path_thickness(self, newThickness):
+        for node in self.document.getroot().iterfind(".//*[@{}template]".format(self.LASER)):
+            template = node.get(inkex.addNS("template", self.LASER_PREFIX))
+            pattern = re.compile(r'[{](.*?)[}]')
+            evaluate = lambda x: str(eval(x.group(1),{},{"thickness":float(self.options.material_thickness)}))
+            result = re.sub(pattern, evaluate, template)
+            node.set("d",result)
+
+
 
 
 if __name__ == '__main__':
