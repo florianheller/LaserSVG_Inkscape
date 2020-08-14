@@ -70,13 +70,15 @@ class LaserSVG(inkex.EffectExtension):
                         # check if a path template is already defined, if not, create one
                         # place the {thickness} label at the repective place in the path template
 
-
-    class horzTemplate(inkex.paths.horz):
+    class template(object):
         def __str__(self):
-            return self.letter + " " + " ".join(self.args)
-    class vertTemplate(inkex.paths.vert):
-        def __str__(self):
-            return self.letter + " " + " ".join(self.args)
+            return self.letter + " " + ", ".join(self.args)
+    class horzTemplate(template,inkex.paths.horz):
+        pass
+    class vertTemplate(template, inkex.paths.vert):
+        pass
+    class lineTemplate(template, inkex.paths.line):
+        pass
 
     def tagSegments(self, path, length):
 
@@ -90,8 +92,13 @@ class LaserSVG(inkex.EffectExtension):
             if command.letter == 'l':
                 x = command.args[0]
                 y = command.args[1]
-                if (x*x + y*y) == length*length:
-                    template.append(inkex.path.line("\{{1}*thickness\}".format(x/length),"{\{1}*thickness\}".format(y/length)))
+
+                # In non-orthogonal cases, there can be a minimal difference due to floating points
+                difference = (x*x + y*y) - (length*length)
+
+
+                if difference < 0.01 and difference > -0.01:
+                    template.append(self.lineTemplate("{{{}*thickness}}".format(x/length),"{{{}*thickness}}".format(y/length)))
                 else:
                     template.append(command)
             elif command.letter in ['v', 'h']:
@@ -107,7 +114,7 @@ class LaserSVG(inkex.EffectExtension):
                     else:
                         pattern = "{{{0}*thickness}}".format( (x / length))
                     if command.letter == 'h':
-                        newCommand = PathCommand.horz(pattern)
+                        newCommand = self.horzTemplate(pattern)
                     elif command.letter == 'v':
                         newCommand = self.vertTemplate(pattern)
 
@@ -125,7 +132,6 @@ class LaserSVG(inkex.EffectExtension):
     def parse_selected_nodes(self, nodes):
         result = {}
         for elem in nodes:
-            # inkex.utils.debug(elem)
             elemData = elem.rsplit(':', 2)
             pathID = elemData[0]
             sub_path = int(elemData[1])
