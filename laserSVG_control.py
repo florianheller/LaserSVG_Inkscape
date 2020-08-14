@@ -31,9 +31,11 @@ class LaserSVG(inkex.EffectExtension):
     LASER_NAMESPACE = "http://www.heller-web.net/lasersvg/"
     LASER_PREFIX = "laser"
     LASER = "{%s}" % LASER_NAMESPACE
+    laserSVGScriptURL = "http://www2.heller-web.net/lasersvg/lasersvg.js"
 
     def add_arguments(self, pars):
         pars.add_argument("--kerf_width", default=0, help="The kerf width")
+        pars.add_argument("--action", default="cut", help="The default laser operation")
         pars.add_argument("--interactive", default=True, help="whether or not to add the stylesheet and the JS references to the file")
         pars.add_argument("--material_thickness", default=3, help="The material thickness")
         pars.add_argument("--tab", help="The selected UI-tab when OK was pressed")
@@ -49,13 +51,26 @@ class LaserSVG(inkex.EffectExtension):
 
         # Set/Update the global thickness in the SVG root node
         self.document.getroot().set(inkex.addNS("material-thickness", self.LASER_PREFIX), self.options.material_thickness)
+
+        # Set/Update the global kerf value in the SVG root node
+        self.document.getroot().set(inkex.addNS("kerf", self.LASER_PREFIX), self.options.kerf_width)
+
+        #Set/Update the gobal laser action in the SVG root node
+        self.document.getroot().set(inkex.addNS("action", self.LASER_PREFIX), self.options.action)
         
         # adjust the thickness on all elements 
         self.adjust_element_thickness(self.options.material_thickness)
 
         # inkex.utils.debug(self.document.getroot().nsmap)
 
-
+        if self.options.interactive == 'true':
+            # Check if there is a reference to the JS and CSS already, otherwise add it
+            # While workin on the file, Inkscape requires the SVG namespace in front of SVG element, even though the prefix will be removed while saving. 
+            if not self.document.getroot().findall(".//{http://www.w3.org/2000/svg}script[@xlink:href='http://www2.heller-web.net/lasersvg/lasersvg.js']"):
+                scriptElement = etree.SubElement(self.document.getroot(), "script")
+                # inkex.utils.debug(scriptElement.localName)
+                scriptElement.set("type", "text/javascript")
+                scriptElement.set("xlink:href",  self.laserSVGScriptURL)
 
         #inkex.utils.debug(etree.tostring(self.document.getroot(),pretty_print=True))
 
