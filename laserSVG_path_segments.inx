@@ -15,7 +15,7 @@
 In a second pass, this information will be mapped onto the original paths and the selection layer will be removed.
 
 </param>           
-                <param name="process_run" type="optiongroup" gui-text="Process step">
+                <param name="selection_process_run" type="optiongroup" gui-text="Process step">
                     <option value="1">Add selection layer</option>
                     <option value="2">Apply selection</option>
                 </param>
@@ -28,7 +28,7 @@ In the first step we will create a layer with all segments that form a slit of t
 In a second pass, this information will be mapped onto the original paths and the selection layer will be removed.
 
 </param>           
-            <param name="process_run" type="optiongroup" gui-text="Process step">
+            <param name="slit_process_run" type="optiongroup" gui-text="Process step">
                 <option value="1">Add selection layer</option>
                 <option value="2">Apply selection</option>
             </param>
