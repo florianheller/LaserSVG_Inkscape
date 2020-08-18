@@ -140,7 +140,7 @@ class LaserSVG(inkex.EffectExtension):
         for index,command in enumerate(path.original_path.to_relative()): #Easier in relative mode
             commandLength = self.getCommandLength(command)
             if commandLength is not None:
-                if abs(commandLength-length) < 0.01:
+                if abs(commandLength-length) < 1:
                 # Now get the coordinates to draw a line from the absolute mode path
                 # TODO: handle Move and Close and H and V (do they exist in absolute mode? Doesn't make much sense)
                     line = etree.SubElement(layer, "line")
@@ -207,7 +207,7 @@ class LaserSVG(inkex.EffectExtension):
             # In non-orthogonal cases, there can be a minimal difference due to floating points
             difference = (x*x + y*y) - (thickness*thickness)
 
-            if abs(difference) < 0.01:
+            if abs(difference) < 0.1:
                 return self.lineTemplate("{{{}*thickness}}".format(x/thickness),"{{{}*thickness}}".format(y/thickness))
             else:
                 return command
