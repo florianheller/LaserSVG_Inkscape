@@ -237,13 +237,24 @@ class LaserSVG(inkex.EffectExtension):
     # Get the length of a relative command segment
     # such that we don't have to handle all the different parameter locations
     def getCommandLength(self, command):
-        if command.letter in ['l', 'm']:
-            return sqrt(command.args[0]**2 + command.args[1]**2)
-        elif command.letter in ['h', 'v']:
-            return command.args[0]
-        # TODO: rest of the commands 
-
-
+        dx,dy = self.getCommandDelta(command)
+        return sqrt(dx**2 + dy**2)
+        
+    def getCommandDelta(self, command):
+        if command.letter == 'l':
+            return (command.args[0], command.args[1])
+        elif command.letter == 'h':
+            return (command.args[0], 0)
+        elif command.letter == 'v':
+            return (0, command.args[0])
+        elif command.letter == 'c':
+            return (command.args[4], command.args[5])
+        elif command.letter in ['s', 'q']:
+            return (command.args[2], command.args[3])
+        elif command.letter == 'a':
+            return (command.args[5], command.args[6])
+        else:
+            return (0, 0)
 
 if __name__ == '__main__':
     LaserSVG().run()
