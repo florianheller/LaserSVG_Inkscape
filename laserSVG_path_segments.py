@@ -22,8 +22,9 @@
 import math
 
 import inkex
+import re
 from lxml import etree
-from math import sqrt
+from math import sqrt, atan2, pi, sin, cos
 
 class LaserSVG(inkex.EffectExtension):
 
@@ -42,7 +43,7 @@ class LaserSVG(inkex.EffectExtension):
         etree.register_namespace("laser", self.LASER_NAMESPACE)
         inkex.utils.NSS["laser"] = self.LASER_NAMESPACE
 
-        inkex.utils.debug(self.options)
+        # inkex.utils.debug(self.options)
 
         # If nothing is selected, we can't do anything
         if not self.svg.selected:
@@ -78,13 +79,22 @@ class LaserSVG(inkex.EffectExtension):
                         # place the {thickness} label at the repective place in the path template
             elif self.options.tab == "tag_selection":    
                 if self.options.selection_process_run == '1':
-                    self.addSelectionLayer(path, float(material_thickness))
+                    self.addSelectionLayer(path, float(material_thickness), "highlightLayer", "Thickness segments", "limegreen")
                 elif self.options.selection_process_run == '2':
                     highlightLayer = self.svg.getElementById("highlightLayer")
                     if highlightLayer is not None:
-                        self.mapSelectionToPaths(highlightLayer)
+                        self.mapSelectionToPaths(highlightLayer, "segments")
                     else:
                         raise inkex.AbortExtension("Please highlight the segments first using the selection layer")
+            elif self.options.tab == "tag_slots":    
+                if self.options.slit_process_run == '1':
+                    self.addSelectionLayer(path, float(material_thickness), "slitLayer", "Thickness slits", "fuchsia")
+                elif self.options.slit_process_run == '2':
+                    slitLayer = self.svg.getElementById("slitLayer")
+                    if slitLayer is not None:
+                        self.mapSelectionToPaths(slitLayer, "slits")
+                    else:
+                        raise inkex.AbortExtension("Please highlight the slits first using the selection layer")
 
 
     class template(object):
@@ -95,6 +105,8 @@ class LaserSVG(inkex.EffectExtension):
     class vertTemplate(template, inkex.paths.vert):
         pass
     class lineTemplate(template, inkex.paths.line):
+        pass
+    class moveTemplate(template, inkex.paths.move):
         pass
 
     def tagSegments(self, path, length):
@@ -107,7 +119,6 @@ class LaserSVG(inkex.EffectExtension):
         for command in path.original_path.to_relative():
             # if the length matches, we replace the args with the according tags
            template.append(self.tagCommand(command, length))
-
         inkex.utils.debug(template)
         path.set(inkex.addNS("template", self.LASER_PREFIX),template)
 
@@ -127,14 +138,14 @@ class LaserSVG(inkex.EffectExtension):
                     result[pathID][sub_path].extend([sel_node])
         return result
 
-    def addSelectionLayer(self, path, length):
+    def addSelectionLayer(self, path, length, layername, readable_layername, layercolor):
         # In Inkscape, layers are SVG-Groups with a special label. 
-        if not self.document.getroot().findall(".//{http://www.w3.org/2000/svg}g[@id='highlightLayer']"):
+        if not self.document.getroot().findall(".//{{http://www.w3.org/2000/svg}}g[@id='{}']".format(layername)):
             layer = etree.SubElement(self.document.getroot(), "g")
-            layer.set("id", "highlightLayer")
-            layer.set("inkscape:label",  "Highlight layer")
+            layer.set("id", layername)
+            layer.set("inkscape:label",  readable_layername)
         else:
-            layer = self.svg.getElementById("highlightLayer")
+            layer = self.svg.getElementById(layername)
 
         # Check for every path segment that is of size length
         for index,command in enumerate(path.original_path.to_relative()): #Easier in relative mode
@@ -148,7 +159,7 @@ class LaserSVG(inkex.EffectExtension):
                     line.set("y1", path.original_path.to_absolute()[index].args[1])
                     line.set("x2", path.original_path.to_absolute()[index-1].args[0])
                     line.set("y2", path.original_path.to_absolute()[index-1].args[1])
-                    line.set("stroke", "limegreen")
+                    line.set("stroke", layercolor)
                     # Use a similar notation to map the segments as for selected nodes
                     # id:entity:segment_number
                     # TODO: handle paths with multiple entities, aka, multiple M commands
@@ -156,7 +167,7 @@ class LaserSVG(inkex.EffectExtension):
                     line.set("id", "{}:{}:{}".format(path.get("id"),0, index))
 
     # Replaces the path segments corresponding to the markers in selectionLayer with {thickness} labels
-    def mapSelectionToPaths(self, selectionLayer):
+    def mapSelectionToPaths(self, selectionLayer, mode):
         # Iterate over all children in selectionLayer and create a dictionary of IDs and segments numbers
         # While we could just call the replace method for every line, I think storing it an then running over the individual paths only once should be faster
         result = {}
@@ -175,12 +186,252 @@ class LaserSVG(inkex.EffectExtension):
         if len(selectionLayer) == 0:
             selectionLayer.getparent().remove(selectionLayer)
 
-
         # Now that we have everything collected, let's tag these segments
         for element,segments in result.items():
-            self.tagSegmentsInPath(self.svg.getElementById(element), segments)
+            if mode == "segments":
+                self.tagSegmentsInPath(self.svg.getElementById(element), segments)
+            elif mode == "slits":
+                self.tagSlitsInPath(self.svg.getElementById(element), segments)
+
+    # The tagging of a slit is a bit more complicatedas we need to adapt the two segments to the left and right respectively.
+    # First, we tag the slit base as being of material thickness
+    # Second, we calculate a line between the start point of the left slit wall and the end-point of the right slit wall. 
+    # This gives us a line that closes the slit, which we will use as an approximation of the slope of the cutout. 
+
+    # This only works after https://gitlab.com/inkscape/extensions/-/commit/44f09e5a01b3ee9dda6d75499f97561a2ef9351f this fix
+
+    def tagSlitsInPath(self, path, segments):
+        template = path.copy().original_path.to_relative()
+        thickness = float(self.document.getroot().get("{}material-thickness".format(self.LASER)))
+
+        # inkex.utils.debug("{} {} {}".format(type(path), type(path.original_path), type(path.get_path())))
+
+        l1 = inkex.transforms.DirectedLineSegment((0,0), (0,10))
+        l2 = inkex.transforms.DirectedLineSegment((0,12), (0,20))
+        l3 = inkex.transforms.DirectedLineSegment((12,12), (14,14)) 
+
+        # inkex.utils.debug("Path Absolute {}".format(path.original_path.to_absolute()))
 
 
+
+        x = l1.intersect(l2)
+        inkex.utils.debug("Intersect {} {}".format(x, l1.intersect(l3)))
+
+
+
+        csp_abs = path.original_path.to_absolute().to_superpath()
+        # inkex.utils.debug(csp_abs[0])
+        # csp = path.original_path
+        # inkex.utils.debug(csp)
+        # for segment in csp.proxy_iterator():
+        #     for point in csp.control_points:
+        #         inkex.utils.debug("{} {}".format(segment, point))
+        # Store away the original control points in absolute values
+        cps = []
+        for cp in path.original_path.proxy_iterator():
+            cps.append(cp.previous_end_point)
+        # inkex.utils.debug(cps)
+
+            # for cp in segment.end_point:
+        for index,command in enumerate(path.original_path.to_relative()):
+            if index in segments:
+                # if index > 1:
+                    # i = command.control_points(csp[index], csp[index-1], csp[index-2])
+                    # inkex.utils.debug(cps[index])
+
+                ll = inkex.transforms.DirectedLineSegment(cps[index-2],cps[index-1])
+                l = inkex.transforms.DirectedLineSegment(cps[index-1],cps[index])
+                c = inkex.transforms.DirectedLineSegment(cps[index], cps[index+1])
+                r = inkex.transforms.DirectedLineSegment(cps[index+1], cps[index+2])
+                rr = inkex.transforms.DirectedLineSegment(cps[index+2],cps[index+3])                
+
+                gap = inkex.transforms.DirectedLineSegment(cps[index-1],cps[index+2])
+
+                # self.drawDebugLine("layer1", gap.x0, gap.y0, gap.x1, gap.y1, "green")
+
+                inkex.utils.debug("{} {} {}".format(ll.angle, ll.intersect(rr), rr.angle))
+
+                # Set the length of the slit base
+                template[index] = self.tagCommand(command, thickness)
+
+                # The segment to the left and right of the base need to be adjusted. 
+                # For that, we take the centerpoint of the slit base, and calculate how much change in x and y
+                # this generates if we draw a vector of half the thickness from there with the same angle as the current base
+                base_dx, base_dy = self.getCommandDelta(command)
+                base_origin_x, base_origin_y = csp_abs[0][index-1][0][0], csp_abs[0][index-1][0][1]
+                # centerpoint = ((base_dx/2),(base_dy/2))
+                centerpoint= (base_origin_x+(base_dx/2), base_origin_y+(base_dy/2))
+
+                # self.drawDebugLine("layer1", centerpoint[0], centerpoint[1], centerpoint[0]+((5/2)*cos(c.angle)), centerpoint[1]+((5/2)*sin(c.angle)), "red")
+
+                change_l = (cos(c.angle)-cos(gap.angle), sin(c.angle)-sin(gap.angle))
+                change_r = (cos(gap.angle)-cos(c.angle), sin(gap.angle)-sin(c.angle))
+                # If these changes are 0, both the slit base and the top line are parallel, 
+                # thus no need to change the length of l an r
+
+                # Otherwise, we need to change the length
+                if not change_l[0]<0.000001 and change_l[1]<0.000001 and change_r[0]<0.000001 and change_r[1]<0.000001:
+                    inkex.utils.debug("Not parallel")
+                else:
+                    inkex.utils.debug("Parallel")
+
+                # inkex.utils.debug("changes: {} {}".format(change_l, change_r))
+                # If they are parallel, we also can take the centerpoint of the gap
+                gap_center = (gap.x0+(gap.dx/2), gap.y0+(gap.dy/2))
+
+                ll_command = template[index-2]
+                args = ll_command.args
+
+                # Check whether that segment has already been tagged 
+                if  "thickness" in str(ll_command):
+
+                    inkex.utils.debug("LL Already tagged {}".format(''))
+                    # Get the terms of the calculation
+                    regex = r"(?P<offset>-?\d+(\.\d+)?)(?P<calc>(?P<factor>[-+]?\d+(\.\d+))?(?P<operator>[-+/\*]?)thickness)*"
+
+                    # line = self.lineTemplate(ll_command.args[0], ll_command.args[1])
+                    result_x = re.search(regex, ll_command.args[0], re.MULTILINE)
+                    result_y = re.search(regex, ll_command.args[1], re.MULTILINE)
+                    inkex.utils.debug("Match groups")
+                    inkex.utils.debug(result_x.groupdict())
+                    inkex.utils.debug(result_y.groupdict())
+
+                    
+
+                    # Mathematical notations are a bit tricky, as we need to look at a series of factors
+                    # The regex only matches if "thickness" is in there, so there is no factor 0
+                    if result_x.group('factor'):
+                        angle_x = float(result_x.group('factor'))
+                    # If there is no factor, a.k.a. no number, we need to look at the operator to determine wether it is + or -
+                    else: 
+                        angle_x = -1.0 if result_x.group('operator') == "-" else 1.0
+
+                    if result_y.group('factor'):
+                        angle_y = float(result_y.group('factor'))
+                    # If there is no factor, a.k.a. no number, we need to look at the operator to determine wether it is + or -
+                    else: 
+                        angle_y = -1.0 if result_y.group('operator') == "-" else 1.0
+
+                    # Now that we have the terms of the calculation, we can adjust that already adjusted segment even further
+                    # the length is always the original length plus half the gap minus the cos/sin of the gaps angle times thickness
+                    # in this case we need to take the factors from the tagges calculation and just add the new ones on top
+
+                    length_x = float(result_x.group('offset')) + (gap.dx/2) 
+                    angle_x = angle_x - (cos(gap.angle)/2) 
+
+                    length_y = float(result_y.group('offset')) + (gap.dy/2)
+                    angle_y = angle_y - (sin(gap.angle)/2) 
+
+
+                    if angle_x == 0:
+                        thickness_term_x = ""
+                    elif angle_x == 1:
+                        thickness_term_x = "thickness"
+                    elif angle_x == -1:
+                        thickness_term_x = "-thickness"
+                    else:
+                        thickness_term_x = "{}{}*thickness".format('+' if angle_x>0 else '', angle_x)
+
+                    thickness_term_test = "" if angle_x == 0 else "thickness" if angle_x == 1 else "-thickness" if angle_x == -1 else "{}{}*thickness".format('+' if angle_x>0 else '', angle_x)
+                    inkex.utils.debug("X")
+                    inkex.utils.debug(thickness_term_x)
+                    inkex.utils.debug("test")
+                    inkex.utils.debug(thickness_term_test)
+
+
+                    if angle_y == 0:
+                        thickness_term_y = ""
+                    elif angle_y == 1:
+                        thickness_term_y = "thickness"
+                    elif angle_y == -1:
+                        thickness_term_y = "-thickness"
+                    else:
+                        thickness_term_y = "{}{}*thickness".format('+' if angle_y>0 else '', angle_y)
+
+                    calculation = ("{{{}{}}}".format(length_x, thickness_term_x), "{{{}{}}}".format(length_y, thickness_term_y))
+                else:
+                    inkex.utils.debug("LL is fresh {}".format(''))
+                    angle_x = -cos(gap.angle)/2
+                    angle_y = -sin(gap.angle)/2
+                    length_x = float(args[0])+(gap.dx/2)
+                    length_y = float(args[1])+(gap.dy/2)
+                    thickness_term_x = "" if angle_x == 0 else "thickness" if angle_x == 1 else "-thickness" if angle_x == -1 else "{}{}*thickness".format('+' if angle_x>0 else '', angle_x)
+                    thickness_term_y = "" if angle_y == 0 else "thickness" if angle_y == 1 else "-thickness" if angle_y == -1 else "{}{}*thickness".format('+' if angle_y>0 else '', angle_y)
+                    calculation = ("{{{}{}}}".format(length_x, thickness_term_x), "{{{}{}}}".format(length_y, thickness_term_y))
+                inkex.utils.debug(calculation)
+                template[index-2] = self.tagCommandWithCalculation(template[index-2], calculation)
+
+
+                rr_command = template[index+2]
+                args = rr_command.args
+                if "thickness" in str(rr_command):
+                    inkex.utils.debug("RR Already tagged {}".format(''))
+                    # Get the terms of the calculation
+                    regex = r"(?P<offset>-?\d+(\.\d+)?)(?P<calc>(?P<factor>[-+]?\d+(\.\d+))?(?P<operator>[-+/\*]?)thickness)*"
+
+                    # line = self.lineTemplate(ll_command.args[0], ll_command.args[1])
+                    result_x = re.search(regex, rr_command.args[0], re.MULTILINE)
+                    result_y = re.search(regex, rr_command.args[1], re.MULTILINE)
+                    inkex.utils.debug("Match groups")
+                    inkex.utils.debug(result_x.groupdict())
+                    inkex.utils.debug(result_y.groupdict())
+
+                    # Now that we have the terms of the calculation, we can adjust that already adjusted segment even further
+                    # the length is always the original length plus half the gap minus the cos/sin of the gaps angle times thickness
+                    # in this case we need to take the factors from the tagges calculation and just add the new ones on top
+
+                    length_x = float(result_x.group('offset')) + (gap.dx/2)
+                    angle_x = float(result_x.group('factor')) - (cos(gap.angle)/2)
+
+                    length_y = float(result_y.group('offset')) + (gap.dy/2)
+                    angle_y = float(result_y.group('factor')) - (sin(gap.angle)/2)
+                    
+                    if angle_x == 0:
+                        thickness_term_x = ""
+                    elif angle_x == 1:
+                        thickness_term_x = "thickness"
+                    elif angle_x == -1:
+                        thickness_term_x = "-thickness"
+                    else:
+                        thickness_term_x = "{}{}*thickness".format('+' if angle_x>0 else '', angle_x)
+
+                    if angle_y == 0:
+                        thickness_term_y = ""
+                    elif angle_y == 1:
+                        thickness_term_y = "thickness"
+                    elif angle_y == -1:
+                        thickness_term_y = "-thickness"
+                    else:
+                        thickness_term_y = "{}{}*thickness".format('+' if angle_y>0 else '', angle_y)
+
+                    calculation = ("{{{}{}}}".format(length_x, thickness_term_x), 
+                        "{{{}{}}}".format(length_y, thickness_term_y))
+                else: 
+                    inkex.utils.debug("RR is fresh {}".format(''))
+                    angle_x = -cos(gap.angle)/2
+                    angle_y = -sin(gap.angle)/2
+                    length_x = float(rr_command.args[0])+(gap.dx/2)
+                    length_y = float(rr_command.args[1])+(gap.dy/2)
+                    thickness_term_x = "" if angle_x == 0 else "thickness" if angle_x == 1 else "-thickness" if angle_x == -1 else "{}{}*thickness".format('+' if angle_x>0 else '', angle_x)
+                    thickness_term_y = "" if angle_y == 0 else "thickness" if angle_y == 1 else "-thickness" if angle_y == -1 else "{}{}*thickness".format('+' if angle_y>0 else '', angle_y)
+
+                    calculation = ("{{{}{}}}".format(length_x, thickness_term_x), "{{{}{}}}".format(length_y, thickness_term_y))
+                template[index+2] = self.tagCommandWithCalculation(template[index+2], calculation)
+
+                # self.drawDebugLine("layer1", gap_center[0], gap_center[1], gap_center[0]+((5/2)*cos(gap.angle)),gap_center[1]+((5/2)*sin(c.angle)), "limegreen")
+                
+
+                inkex.utils.debug(template)
+                # The new endpoint for the ll segment is thus gap_center.x-{thickness*cos(gap.angle),gap_center.y-{thickness*sin(gap.angle)}}
+                path.set(inkex.addNS("template", self.LASER_PREFIX),template)
+
+                # template[index-1] = self.tagCommandWithCalculation(command, )
+                # inkex.utils.debug(template[index].end_point)
+
+                # x = command.previous_end_point
+                # inkex.utils.debug("{}".format(x))
+                #segments-2 and +2 need to be shortened by 0.5*thickness to keep the slit centered
+                #segments-1 and +1 need to be adjusted such that they match
 
     def tagSegmentsInPath(self, path, segments):
         template = path.copy().original_path.to_relative()
@@ -197,6 +448,35 @@ class LaserSVG(inkex.EffectExtension):
         # inkex.utils.debug(sp[0][2])
         # for segment in path.original_path:
         #     inkex.utils.debug(segment)
+
+    # returns a command with tagged parameters including a calculation
+    def tagCommandWithCalculation(self, command, calculation):
+        if command.letter == 'l':
+            return self.lineTemplate(calculation[0],calculation[1])
+        elif command.letter == 'm':
+            return self.moveTemplate(calculation[0],calculation[1])
+        elif command.letter in ['v', 'h']:
+            x = command.args[0]
+
+            if  x * x == thickness * thickness:
+                ratio = (x / thickness)
+                pattern = ""
+                if ratio == 1:
+                    pattern = "{thickness}"
+                elif ratio == -1:
+                    pattern = "{-thickness}"
+                else:
+                    pattern = "{{{0}*thickness}}".format( (x / thickness))
+                if command.letter == 'h':
+                    newCommand = self.horzTemplate(pattern)
+                elif command.letter == 'v':
+                    newCommand = self.vertTemplate(pattern)
+
+                return newCommand
+            else: #if the length does not match
+                return command
+        else: # if the command is not handled
+            return command
 
     # returns a command with tagged parameters
     def tagCommand(self, command, thickness):
@@ -255,6 +535,29 @@ class LaserSVG(inkex.EffectExtension):
             return (command.args[5], command.args[6])
         else:
             return (0, 0)
+
+
+    def drawDebugLine(self, layer, x1, y1, x2, y2, color):
+        layer = self.svg.getElementById(layer)
+
+        line = etree.SubElement(layer, "line")
+        line.set("x1", x1 )
+        line.set("y1", y1)
+        line.set("x2", x2)
+        line.set("y2", y2)
+        line.set("stroke", color)
+
+
+    # The length of the command needs to be adjusted by dx and dy
+    # def adjustCommandByDelta(self, command, dx, dy):
+    #     if command.letter == 'l':
+
+    #     if command.letter == 'h':
+
+    #     if command.letter == 'v':
+
+
+
 
 if __name__ == '__main__':
     LaserSVG().run()
