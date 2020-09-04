@@ -24,7 +24,7 @@ import math
 import inkex
 import re
 from lxml import etree
-from math import sqrt, atan2, pi, sin, cos
+from math import sqrt, atan2, pi, sin, cos, trunc
 
 class LaserSVG(inkex.EffectExtension):
 
@@ -546,7 +546,9 @@ class LaserSVG(inkex.EffectExtension):
         line.set("x2", x2)
         line.set("y2", y2)
         line.set("stroke", color)
-
+def truncate(number, digits) -> float:
+    stepper = 10.0 ** digits
+    return math.trunc(stepper * number) / stepper
 
     # The length of the command needs to be adjusted by dx and dy
     # def adjustCommandByDelta(self, command, dx, dy):
