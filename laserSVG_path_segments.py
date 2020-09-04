@@ -140,7 +140,7 @@ class LaserSVG(inkex.EffectExtension):
 
     def addSelectionLayer(self, path, length, layername, readable_layername, layercolor):
         # In Inkscape, layers are SVG-Groups with a special label. 
-        if not self.document.getroot().findall(".//{{http://www.w3.org/2000/svg}}g[@id='{}']".format(layername)):
+        if not self.document.getroot().findall(".//g[@id='{}']".format(layername)):
             layer = etree.SubElement(self.document.getroot(), "g")
             layer.set("id", layername)
             layer.set("inkscape:label",  readable_layername)
@@ -154,6 +154,8 @@ class LaserSVG(inkex.EffectExtension):
                 if abs(commandLength-length) < 1:
                 # Now get the coordinates to draw a line from the absolute mode path
                 # TODO: handle Move and Close and H and V (do they exist in absolute mode? Doesn't make much sense)
+                    
+
                     line = etree.SubElement(layer, "line")
                     line.set("x1", path.original_path.to_absolute()[index].args[0] )
                     line.set("y1", path.original_path.to_absolute()[index].args[1])
@@ -284,81 +286,88 @@ class LaserSVG(inkex.EffectExtension):
 
                 # Check whether that segment has already been tagged 
                 if  "thickness" in str(ll_command):
-
+                    thickness_term_x = args[0]
                     inkex.utils.debug("LL Already tagged {}".format(''))
                     # Get the terms of the calculation
                     regex = r"(?P<offset>-?\d+(\.\d+)?)(?P<calc>(?P<factor>[-+]?\d+(\.\d+))?(?P<operator>[-+/\*]?)thickness)*"
 
-                    # line = self.lineTemplate(ll_command.args[0], ll_command.args[1])
-                    result_x = re.search(regex, ll_command.args[0], re.MULTILINE)
-                    result_y = re.search(regex, ll_command.args[1], re.MULTILINE)
-                    inkex.utils.debug("Match groups")
-                    inkex.utils.debug(result_x.groupdict())
-                    inkex.utils.debug(result_y.groupdict())
+                    if "thickness" in args[0]:
 
-                    
+                        result_x = re.search(regex, ll_command.args[0], re.MULTILINE)
+                        # inkex.utils.debug(result_x.groupdict())
 
-                    # Mathematical notations are a bit tricky, as we need to look at a series of factors
-                    # The regex only matches if "thickness" is in there, so there is no factor 0
-                    if result_x.group('factor'):
-                        angle_x = float(result_x.group('factor'))
-                    # If there is no factor, a.k.a. no number, we need to look at the operator to determine wether it is + or -
-                    else: 
-                        angle_x = -1.0 if result_x.group('operator') == "-" else 1.0
+                        #The regex also matches when there is 
 
-                    if result_y.group('factor'):
-                        angle_y = float(result_y.group('factor'))
-                    # If there is no factor, a.k.a. no number, we need to look at the operator to determine wether it is + or -
-                    else: 
-                        angle_y = -1.0 if result_y.group('operator') == "-" else 1.0
+                        # Mathematical notations are a bit tricky, as we need to look at a series of factors
+                        # The regex only matches if "thickness" is in there, so there is no factor 0
+                        if result_x.group('factor'):
+                            angle_x = float(result_x.group('factor'))
+                        # If there is no factor, a.k.a. no number, we need to look at the operator to determine wether it is + or -
+                        else: 
+                            angle_x = -1.0 if result_x.group('operator') == "-" else 1.0
 
-                    # Now that we have the terms of the calculation, we can adjust that already adjusted segment even further
-                    # the length is always the original length plus half the gap minus the cos/sin of the gaps angle times thickness
-                    # in this case we need to take the factors from the tagges calculation and just add the new ones on top
+                        # Now that we have the terms of the calculation, we can adjust that already adjusted segment even further
+                        # the length is always the original length plus half the gap minus the cos/sin of the gaps angle times thickness
+                        # in this case we need to take the factors from the tagges calculation and just add the new ones on top
 
-                    length_x = float(result_x.group('offset')) + (gap.dx/2) 
-                    angle_x = angle_x - (cos(gap.angle)/2) 
+                        length_x = float(result_x.group('offset')) + (gap.dx/2) 
+                        angle_x = truncate(angle_x - (cos(gap.angle)/2), 15)
 
-                    length_y = float(result_y.group('offset')) + (gap.dy/2)
-                    angle_y = angle_y - (sin(gap.angle)/2) 
+                        if angle_x == 0:
+                            thickness_term_x = f"{length_x}"
+                        elif angle_x == 1:
+                            thickness_term_x = f"{{{length_x}+thickness}}"
+                        elif angle_x == -1:
+                            thickness_term_x = f"{{{length_x}-thickness}}"
+                        else:
+                            thickness_term_x = "{{{}{:+}*thickness}}".format(length_x,angle_x)
+
+                    if "thickness" in args[1]:
+                        thickness_term_y = args[1]
+                        result_y = re.search(regex, ll_command.args[1], re.MULTILINE)
+                        # inkex.utils.debug(result_y.groupdict())
+
+                        if result_y.group('factor'):
+                            angle_y = float(result_y.group('factor'))
+                        # If there is no factor, a.k.a. no number, we need to look at the operator to determine wether it is + or -
+                        else: 
+                            if result_y.group('operator') == "-":
+                                angle_y = -1.0
+                            elif result_y.group('operator') == "+":
+                                angle_y = +1.0
+                        
+                        length_y = float(result_y.group('offset')) + (gap.dy/2)
+                        angle_y = truncate(angle_y - (sin(gap.angle)/2), 15)
+
+                        if angle_y == 0:
+                            thickness_term_y = f"{length_y}"
+                        elif angle_y == 1:
+                            thickness_term_y = f"{{{length_y}+thickness}}"
+                        elif angle_y == -1:
+                            thickness_term_y = f"{{{length_y}-thickness}}"
+                        else:
+                            thickness_term_y = "{{{}{:+}*thickness}}".format(length_y,angle_y)
 
 
-                    if angle_x == 0:
-                        thickness_term_x = ""
-                    elif angle_x == 1:
-                        thickness_term_x = "thickness"
-                    elif angle_x == -1:
-                        thickness_term_x = "-thickness"
-                    else:
-                        thickness_term_x = "{}{}*thickness".format('+' if angle_x>0 else '', angle_x)
-
-                    thickness_term_test = "" if angle_x == 0 else "thickness" if angle_x == 1 else "-thickness" if angle_x == -1 else "{}{}*thickness".format('+' if angle_x>0 else '', angle_x)
-                    inkex.utils.debug("X")
-                    inkex.utils.debug(thickness_term_x)
-                    inkex.utils.debug("test")
-                    inkex.utils.debug(thickness_term_test)
+                    # thickness_term_test = "" if angle_x == 0 else "thickness" if angle_x == 1 else "-thickness" if angle_x == -1 else "{}{}*thickness".format('+' if angle_x>0 else '', angle_x)
+                    # inkex.utils.debug("X")
+                    # inkex.utils.debug(thickness_term_x)
+                    # inkex.utils.debug("test")
+                    # inkex.utils.debug(thickness_term_test)
 
 
-                    if angle_y == 0:
-                        thickness_term_y = ""
-                    elif angle_y == 1:
-                        thickness_term_y = "thickness"
-                    elif angle_y == -1:
-                        thickness_term_y = "-thickness"
-                    else:
-                        thickness_term_y = "{}{}*thickness".format('+' if angle_y>0 else '', angle_y)
 
-                    calculation = ("{{{}{}}}".format(length_x, thickness_term_x), "{{{}{}}}".format(length_y, thickness_term_y))
+                    calculation = (thickness_term_x, thickness_term_y)
                 else:
-                    inkex.utils.debug("LL is fresh {}".format(''))
-                    angle_x = -cos(gap.angle)/2
-                    angle_y = -sin(gap.angle)/2
+                    angle_x = truncate(-cos(gap.angle)/2, 15)
+                    angle_y = truncate(-sin(gap.angle)/2, 15)
                     length_x = float(args[0])+(gap.dx/2)
                     length_y = float(args[1])+(gap.dy/2)
-                    thickness_term_x = "" if angle_x == 0 else "thickness" if angle_x == 1 else "-thickness" if angle_x == -1 else "{}{}*thickness".format('+' if angle_x>0 else '', angle_x)
-                    thickness_term_y = "" if angle_y == 0 else "thickness" if angle_y == 1 else "-thickness" if angle_y == -1 else "{}{}*thickness".format('+' if angle_y>0 else '', angle_y)
-                    calculation = ("{{{}{}}}".format(length_x, thickness_term_x), "{{{}{}}}".format(length_y, thickness_term_y))
-                inkex.utils.debug(calculation)
+
+                    thickness_term_x = f"{length_x}" if angle_x == 0.0 else f"{{{length_x}+thickness}}" if angle_x == 1.0 else f"{{{length_x}-thickness}}" if angle_x == -1.0 else "{{{}{:+}*thickness}}".format(length_x,angle_x)
+                    thickness_term_y = f"{length_y}" if angle_y == 0.0 else f"{{{length_y}+thickness}}" if angle_y == 1.0 else f"{{{length_y}-thickness}}" if angle_y == -1.0 else "{{{}{:+}*thickness}}".format(length_y,angle_y)
+
+                    calculation = (thickness_term_x, thickness_term_y)
                 template[index-2] = self.tagCommandWithCalculation(template[index-2], calculation)
 
 
@@ -393,7 +402,7 @@ class LaserSVG(inkex.EffectExtension):
                     elif angle_x == -1:
                         thickness_term_x = "-thickness"
                     else:
-                        thickness_term_x = "{}{}*thickness".format('+' if angle_x>0 else '', angle_x)
+                        thickness_term_x =  "{:+}*thickness".format(angle_x)
 
                     if angle_y == 0:
                         thickness_term_y = ""
@@ -402,26 +411,25 @@ class LaserSVG(inkex.EffectExtension):
                     elif angle_y == -1:
                         thickness_term_y = "-thickness"
                     else:
-                        thickness_term_y = "{}{}*thickness".format('+' if angle_y>0 else '', angle_y)
+                        thickness_term_y =  "{:+}*thickness".format(angle_y)
 
                     calculation = ("{{{}{}}}".format(length_x, thickness_term_x), 
                         "{{{}{}}}".format(length_y, thickness_term_y))
                 else: 
-                    inkex.utils.debug("RR is fresh {}".format(''))
-                    angle_x = -cos(gap.angle)/2
-                    angle_y = -sin(gap.angle)/2
-                    length_x = float(rr_command.args[0])+(gap.dx/2)
-                    length_y = float(rr_command.args[1])+(gap.dy/2)
-                    thickness_term_x = "" if angle_x == 0 else "thickness" if angle_x == 1 else "-thickness" if angle_x == -1 else "{}{}*thickness".format('+' if angle_x>0 else '', angle_x)
-                    thickness_term_y = "" if angle_y == 0 else "thickness" if angle_y == 1 else "-thickness" if angle_y == -1 else "{}{}*thickness".format('+' if angle_y>0 else '', angle_y)
+                    angle_x = truncate(-cos(gap.angle)/2, 15)
+                    angle_y = truncate(-sin(gap.angle)/2, 15)
+                    length_x = float(args[0])+(gap.dx/2)
+                    length_y = float(args[1])+(gap.dy/2)
 
-                    calculation = ("{{{}{}}}".format(length_x, thickness_term_x), "{{{}{}}}".format(length_y, thickness_term_y))
+                    thickness_term_x = f"{length_x}" if angle_x == 0.0 else f"{{{length_x}+thickness}}" if angle_x == 1.0 else f"{{{length_x}-thickness}}" if angle_x == -1.0 else "{{{}{:+}*thickness}}".format(length_x,angle_x)
+                    thickness_term_y = f"{length_y}" if angle_y == 0.0 else f"{{{length_y}+thickness}}" if angle_y == 1.0 else f"{{{length_y}-thickness}}" if angle_y == -1.0 else "{{{}{:+}*thickness}}".format(length_y,angle_y)
+
+                    calculation = (thickness_term_x, thickness_term_y)
                 template[index+2] = self.tagCommandWithCalculation(template[index+2], calculation)
 
                 # self.drawDebugLine("layer1", gap_center[0], gap_center[1], gap_center[0]+((5/2)*cos(gap.angle)),gap_center[1]+((5/2)*sin(c.angle)), "limegreen")
                 
 
-                inkex.utils.debug(template)
                 # The new endpoint for the ll segment is thus gap_center.x-{thickness*cos(gap.angle),gap_center.y-{thickness*sin(gap.angle)}}
                 path.set(inkex.addNS("template", self.LASER_PREFIX),template)
 
@@ -488,21 +496,24 @@ class LaserSVG(inkex.EffectExtension):
             difference = (x*x + y*y) - (thickness*thickness)
 
             if abs(difference) < 0.1:
-                return self.lineTemplate("{{{}*thickness}}".format(x/thickness),"{{{}*thickness}}".format(y/thickness))
+                factor_x = truncate(x/thickness, 15)
+                factor_y = truncate(y/thickness, 15)
+                return self.lineTemplate("0" if factor_x == 0 else "{thickness}" if factor_x == 1 else "{-thickness}" if factor_x == -1 else "{{{}*thickness}}".format(factor_x),
+                    "0" if factor_y == 0 else "{thickness}" if factor_y == 1 else "{-thickness}" if factor_y == -1 else "{{{}*thickness}}".format(factor_y))
             else:
                 return command
         elif command.letter in ['v', 'h']:
             x = command.args[0]
 
             if  x * x == thickness * thickness:
-                ratio = (x / thickness)
+                ratio = truncate(x / thickness, 15)
                 pattern = ""
                 if ratio == 1:
                     pattern = "{thickness}"
                 elif ratio == -1:
                     pattern = "{-thickness}"
                 else:
-                    pattern = "{{{0}*thickness}}".format( (x / thickness))
+                    pattern = "{{{}*thickness}}".format( (x / thickness))
                 if command.letter == 'h':
                     newCommand = self.horzTemplate(pattern)
                 elif command.letter == 'v':
@@ -516,7 +527,7 @@ class LaserSVG(inkex.EffectExtension):
 
     # Get the length of a relative command segment
     # such that we don't have to handle all the different parameter locations
-    def getCommandLength(self, command):
+    def getCommandLength(self, command) -> float:
         dx,dy = self.getCommandDelta(command)
         return sqrt(dx**2 + dy**2)
         
@@ -536,6 +547,14 @@ class LaserSVG(inkex.EffectExtension):
         else:
             return (0, 0)
 
+    #Return the endpoint coordinates of an absolute command
+    # def getCommandEndpoint(self, command):
+    #     if command.letter == "L":
+    #         return (command.args)
+    #     elif command.letter == "V":
+    #         return 
+
+
 
     def drawDebugLine(self, layer, x1, y1, x2, y2, color):
         layer = self.svg.getElementById(layer)
@@ -546,10 +565,10 @@ class LaserSVG(inkex.EffectExtension):
         line.set("x2", x2)
         line.set("y2", y2)
         line.set("stroke", color)
+
 def truncate(number, digits) -> float:
     stepper = 10.0 ** digits
     return math.trunc(stepper * number) / stepper
-
     # The length of the command needs to be adjusted by dx and dy
     # def adjustCommandByDelta(self, command, dx, dy):
     #     if command.letter == 'l':
