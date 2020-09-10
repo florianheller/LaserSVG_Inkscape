@@ -36,6 +36,14 @@ In a second pass, this information will be mapped onto the original paths and th
         <page name="help" gui-text="Help">
             <label xml:space="preserve">This extension adds {thickness} labels to the path template of a LaserSVG file.</label>
         </page>
+        <page name="kerf" gui-text="Kerf Adjustment">
+                <param name="desc1" type="description">Here you can specify wether the selected path segments should grow or shrink when the kerf-width is adjusted. With certain materials, this setting ensures a tight fit.</param>
+                <param name="kerf_direction" type="optiongroup" gui-text="Kerf adjutment direction">
+                    <option value="g">Grow</option>
+                    <option value="s">Shrink</option>
+                </param>
+
+        </page>
     </param>        
 
     <effect>

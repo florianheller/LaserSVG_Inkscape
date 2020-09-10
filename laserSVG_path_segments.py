@@ -37,13 +37,14 @@ class LaserSVG(inkex.EffectExtension):
         pars.add_argument("--material_thickness", default=3, help="The material thickness")
         pars.add_argument("--selection_process_run", default=1, help="The step number of the two-step process")
         pars.add_argument("--slit_process_run", default=1, help="The step number of the two-step process")
+        pars.add_argument("--kerf_direction", default=0, help="The direction in which the kerf-adjustments should be made.")
         pars.add_argument("--tab", help="The selected UI-tab when OK was pressed")
 
     def effect(self):
         etree.register_namespace("laser", self.LASER_NAMESPACE)
         inkex.utils.NSS["laser"] = self.LASER_NAMESPACE
 
-        # inkex.utils.debug(self.options)
+        inkex.utils.debug(self.options)
 
         # If nothing is selected, we can't do anything
         if not self.svg.selected:
@@ -146,21 +147,20 @@ class LaserSVG(inkex.EffectExtension):
             layer.set("inkscape:label",  readable_layername)
         else:
             layer = self.svg.getElementById(layername)
-
         # Check for every path segment that is of size length
         for index,command in enumerate(path.original_path.to_relative()): #Easier in relative mode
             commandLength = self.getCommandLength(command)
+            inkex.utils.debug(f"{command} {commandLength}")
             if commandLength is not None:
                 if abs(commandLength-length) < 1:
                 # Now get the coordinates to draw a line from the absolute mode path
-                # TODO: handle Move and Close and H and V (do they exist in absolute mode? Doesn't make much sense)
-                    
+                # TODO: handle Move and Close and H and V 
 
                     line = etree.SubElement(layer, "line")
-                    line.set("x1", path.original_path.to_absolute()[index].args[0] )
-                    line.set("y1", path.original_path.to_absolute()[index].args[1])
-                    line.set("x2", path.original_path.to_absolute()[index-1].args[0])
-                    line.set("y2", path.original_path.to_absolute()[index-1].args[1])
+                    line.set("x1", self.getCommandEndpoint(path.original_path.to_absolute()[index], path.original_path.to_absolute()[index-1])[0])
+                    line.set("y1", self.getCommandEndpoint(path.original_path.to_absolute()[index], path.original_path.to_absolute()[index-1])[1])
+                    line.set("x2", self.getCommandEndpoint(path.original_path.to_absolute()[index-1], path.original_path.to_absolute()[index-2])[0])
+                    line.set("y2", self.getCommandEndpoint(path.original_path.to_absolute()[index-1], path.original_path.to_absolute()[index-2])[1])
                     line.set("stroke", layercolor)
                     # Use a similar notation to map the segments as for selected nodes
                     # id:entity:segment_number
@@ -214,12 +214,8 @@ class LaserSVG(inkex.EffectExtension):
 
         # inkex.utils.debug("Path Absolute {}".format(path.original_path.to_absolute()))
 
-
-
         x = l1.intersect(l2)
         inkex.utils.debug("Intersect {} {}".format(x, l1.intersect(l3)))
-
-
 
         csp_abs = path.original_path.to_absolute().to_superpath()
         # inkex.utils.debug(csp_abs[0])
@@ -240,18 +236,21 @@ class LaserSVG(inkex.EffectExtension):
                 # if index > 1:
                     # i = command.control_points(csp[index], csp[index-1], csp[index-2])
                     # inkex.utils.debug(cps[index])
-
-                ll = inkex.transforms.DirectedLineSegment(cps[index-2],cps[index-1])
-                l = inkex.transforms.DirectedLineSegment(cps[index-1],cps[index])
+                if index >=2:
+                    ll = inkex.transforms.DirectedLineSegment(cps[index-2],cps[index-1])
+                if index >=1:
+                    l = inkex.transforms.DirectedLineSegment(cps[index-1],cps[index])
                 c = inkex.transforms.DirectedLineSegment(cps[index], cps[index+1])
-                r = inkex.transforms.DirectedLineSegment(cps[index+1], cps[index+2])
-                rr = inkex.transforms.DirectedLineSegment(cps[index+2],cps[index+3])                
+                if index < len(cps)-2:
+                    r = inkex.transforms.DirectedLineSegment(cps[index+1], cps[index+2])
+                if index < len(cps)-3:
+                    rr = inkex.transforms.DirectedLineSegment(cps[index+2],cps[index+3])                
 
                 gap = inkex.transforms.DirectedLineSegment(cps[index-1],cps[index+2])
 
-                # self.drawDebugLine("layer1", gap.x0, gap.y0, gap.x1, gap.y1, "green")
+                self.drawDebugLine("layer1", gap.x0, gap.y0, gap.x1, gap.y1, "green")
 
-                inkex.utils.debug("{} {} {}".format(ll.angle, ll.intersect(rr), rr.angle))
+                #inkex.utils.debug("{} {} {}".format(ll.angle, ll.intersect(rr), rr.angle))
 
                 # Set the length of the slit base
                 template[index] = self.tagCommand(command, thickness)
@@ -269,10 +268,10 @@ class LaserSVG(inkex.EffectExtension):
                 change_l = (cos(c.angle)-cos(gap.angle), sin(c.angle)-sin(gap.angle))
                 change_r = (cos(gap.angle)-cos(c.angle), sin(gap.angle)-sin(c.angle))
                 # If these changes are 0, both the slit base and the top line are parallel, 
-                # thus no need to change the length of l an r
+                # thus no need to change the length of l and r
 
                 # Otherwise, we need to change the length
-                if not change_l[0]<0.000001 and change_l[1]<0.000001 and change_r[0]<0.000001 and change_r[1]<0.000001:
+                if not change_l[0]<0.0001 and not change_l[1]<0.0001 and not change_r[0]<0.000001 and not change_r[1]<0.000001:
                     inkex.utils.debug("Not parallel")
                 else:
                     inkex.utils.debug("Parallel")
@@ -281,152 +280,10 @@ class LaserSVG(inkex.EffectExtension):
                 # If they are parallel, we also can take the centerpoint of the gap
                 gap_center = (gap.x0+(gap.dx/2), gap.y0+(gap.dy/2))
 
-                ll_command = template[index-2]
-                args = ll_command.args
-
-                # Check whether that segment has already been tagged 
-                if  "thickness" in str(ll_command):
-                    thickness_term_x = args[0]
-                    inkex.utils.debug("LL Already tagged {}".format(''))
-                    # Get the terms of the calculation
-                    regex = r"(?P<offset>-?\d+(\.\d+)?)(?P<calc>(?P<factor>[-+]?\d+(\.\d+))?(?P<operator>[-+/\*]?)thickness)*"
-
-                    if "thickness" in args[0]:
-
-                        result_x = re.search(regex, ll_command.args[0], re.MULTILINE)
-                        # inkex.utils.debug(result_x.groupdict())
-
-                        #The regex also matches when there is 
-
-                        # Mathematical notations are a bit tricky, as we need to look at a series of factors
-                        # The regex only matches if "thickness" is in there, so there is no factor 0
-                        if result_x.group('factor'):
-                            angle_x = float(result_x.group('factor'))
-                        # If there is no factor, a.k.a. no number, we need to look at the operator to determine wether it is + or -
-                        else: 
-                            angle_x = -1.0 if result_x.group('operator') == "-" else 1.0
-
-                        # Now that we have the terms of the calculation, we can adjust that already adjusted segment even further
-                        # the length is always the original length plus half the gap minus the cos/sin of the gaps angle times thickness
-                        # in this case we need to take the factors from the tagges calculation and just add the new ones on top
-
-                        length_x = float(result_x.group('offset')) + (gap.dx/2) 
-                        angle_x = truncate(angle_x - (cos(gap.angle)/2), 15)
-
-                        if angle_x == 0:
-                            thickness_term_x = f"{length_x}"
-                        elif angle_x == 1:
-                            thickness_term_x = f"{{{length_x}+thickness}}"
-                        elif angle_x == -1:
-                            thickness_term_x = f"{{{length_x}-thickness}}"
-                        else:
-                            thickness_term_x = "{{{}{:+}*thickness}}".format(length_x,angle_x)
-
-                    if "thickness" in args[1]:
-                        thickness_term_y = args[1]
-                        result_y = re.search(regex, ll_command.args[1], re.MULTILINE)
-                        # inkex.utils.debug(result_y.groupdict())
-
-                        if result_y.group('factor'):
-                            angle_y = float(result_y.group('factor'))
-                        # If there is no factor, a.k.a. no number, we need to look at the operator to determine wether it is + or -
-                        else: 
-                            if result_y.group('operator') == "-":
-                                angle_y = -1.0
-                            elif result_y.group('operator') == "+":
-                                angle_y = +1.0
-                        
-                        length_y = float(result_y.group('offset')) + (gap.dy/2)
-                        angle_y = truncate(angle_y - (sin(gap.angle)/2), 15)
-
-                        if angle_y == 0:
-                            thickness_term_y = f"{length_y}"
-                        elif angle_y == 1:
-                            thickness_term_y = f"{{{length_y}+thickness}}"
-                        elif angle_y == -1:
-                            thickness_term_y = f"{{{length_y}-thickness}}"
-                        else:
-                            thickness_term_y = "{{{}{:+}*thickness}}".format(length_y,angle_y)
-
-
-                    # thickness_term_test = "" if angle_x == 0 else "thickness" if angle_x == 1 else "-thickness" if angle_x == -1 else "{}{}*thickness".format('+' if angle_x>0 else '', angle_x)
-                    # inkex.utils.debug("X")
-                    # inkex.utils.debug(thickness_term_x)
-                    # inkex.utils.debug("test")
-                    # inkex.utils.debug(thickness_term_test)
-
-
-
-                    calculation = (thickness_term_x, thickness_term_y)
-                else:
-                    angle_x = truncate(-cos(gap.angle)/2, 15)
-                    angle_y = truncate(-sin(gap.angle)/2, 15)
-                    length_x = float(args[0])+(gap.dx/2)
-                    length_y = float(args[1])+(gap.dy/2)
-
-                    thickness_term_x = f"{length_x}" if angle_x == 0.0 else f"{{{length_x}+thickness}}" if angle_x == 1.0 else f"{{{length_x}-thickness}}" if angle_x == -1.0 else "{{{}{:+}*thickness}}".format(length_x,angle_x)
-                    thickness_term_y = f"{length_y}" if angle_y == 0.0 else f"{{{length_y}+thickness}}" if angle_y == 1.0 else f"{{{length_y}-thickness}}" if angle_y == -1.0 else "{{{}{:+}*thickness}}".format(length_y,angle_y)
-
-                    calculation = (thickness_term_x, thickness_term_y)
-                template[index-2] = self.tagCommandWithCalculation(template[index-2], calculation)
-
-
-                rr_command = template[index+2]
-                args = rr_command.args
-                if "thickness" in str(rr_command):
-                    inkex.utils.debug("RR Already tagged {}".format(''))
-                    # Get the terms of the calculation
-                    regex = r"(?P<offset>-?\d+(\.\d+)?)(?P<calc>(?P<factor>[-+]?\d+(\.\d+))?(?P<operator>[-+/\*]?)thickness)*"
-
-                    # line = self.lineTemplate(ll_command.args[0], ll_command.args[1])
-                    result_x = re.search(regex, rr_command.args[0], re.MULTILINE)
-                    result_y = re.search(regex, rr_command.args[1], re.MULTILINE)
-                    inkex.utils.debug("Match groups")
-                    inkex.utils.debug(result_x.groupdict())
-                    inkex.utils.debug(result_y.groupdict())
-
-                    # Now that we have the terms of the calculation, we can adjust that already adjusted segment even further
-                    # the length is always the original length plus half the gap minus the cos/sin of the gaps angle times thickness
-                    # in this case we need to take the factors from the tagges calculation and just add the new ones on top
-
-                    length_x = float(result_x.group('offset')) + (gap.dx/2)
-                    angle_x = float(result_x.group('factor')) - (cos(gap.angle)/2)
-
-                    length_y = float(result_y.group('offset')) + (gap.dy/2)
-                    angle_y = float(result_y.group('factor')) - (sin(gap.angle)/2)
-                    
-                    if angle_x == 0:
-                        thickness_term_x = ""
-                    elif angle_x == 1:
-                        thickness_term_x = "thickness"
-                    elif angle_x == -1:
-                        thickness_term_x = "-thickness"
-                    else:
-                        thickness_term_x =  "{:+}*thickness".format(angle_x)
-
-                    if angle_y == 0:
-                        thickness_term_y = ""
-                    elif angle_y == 1:
-                        thickness_term_y = "thickness"
-                    elif angle_y == -1:
-                        thickness_term_y = "-thickness"
-                    else:
-                        thickness_term_y =  "{:+}*thickness".format(angle_y)
-
-                    calculation = ("{{{}{}}}".format(length_x, thickness_term_x), 
-                        "{{{}{}}}".format(length_y, thickness_term_y))
-                else: 
-                    angle_x = truncate(-cos(gap.angle)/2, 15)
-                    angle_y = truncate(-sin(gap.angle)/2, 15)
-                    length_x = float(args[0])+(gap.dx/2)
-                    length_y = float(args[1])+(gap.dy/2)
-
-                    thickness_term_x = f"{length_x}" if angle_x == 0.0 else f"{{{length_x}+thickness}}" if angle_x == 1.0 else f"{{{length_x}-thickness}}" if angle_x == -1.0 else "{{{}{:+}*thickness}}".format(length_x,angle_x)
-                    thickness_term_y = f"{length_y}" if angle_y == 0.0 else f"{{{length_y}+thickness}}" if angle_y == 1.0 else f"{{{length_y}-thickness}}" if angle_y == -1.0 else "{{{}{:+}*thickness}}".format(length_y,angle_y)
-
-                    calculation = (thickness_term_x, thickness_term_y)
-                template[index+2] = self.tagCommandWithCalculation(template[index+2], calculation)
-
+                if index >=2:
+                    template[index-2] = self.tagCommandWithCalculation(template[index-2], self.tagSlitSegment(template[index-2],gap, template[index]))
+                if index < len(cps)-2:
+                    template[index+2] = self.tagCommandWithCalculation(template[index+2], self.tagSlitSegment(template[index+2],gap, template[index]))
                 # self.drawDebugLine("layer1", gap_center[0], gap_center[1], gap_center[0]+((5/2)*cos(gap.angle)),gap_center[1]+((5/2)*sin(c.angle)), "limegreen")
                 
 
@@ -464,27 +321,120 @@ class LaserSVG(inkex.EffectExtension):
         elif command.letter == 'm':
             return self.moveTemplate(calculation[0],calculation[1])
         elif command.letter in ['v', 'h']:
-            x = command.args[0]
-
-            if  x * x == thickness * thickness:
-                ratio = (x / thickness)
-                pattern = ""
-                if ratio == 1:
-                    pattern = "{thickness}"
-                elif ratio == -1:
-                    pattern = "{-thickness}"
-                else:
-                    pattern = "{{{0}*thickness}}".format( (x / thickness))
-                if command.letter == 'h':
-                    newCommand = self.horzTemplate(pattern)
-                elif command.letter == 'v':
-                    newCommand = self.vertTemplate(pattern)
-
-                return newCommand
-            else: #if the length does not match
-                return command
+            if command.letter == 'h':
+                newCommand = self.horzTemplate(calculation[0])
+            elif command.letter == 'v':
+                newCommand = self.vertTemplate(calculation[0])
+            return newCommand
         else: # if the command is not handled
             return command
+
+    def tagSlitSegment(self, command, gap, centerpiece):
+        # The close-command doesn't have any parameters that we would need to adjust
+        if command.letter == "z":
+            return("","")
+        elif command.letter == "l" or command.letter == "h" or command.letter == "v" or command.letter == "t" or command.letter == "m":
+            args = command.args
+        elif command.letter == "s" or command.letter == "q":
+            args = (command.args[2], command.args[3])
+        elif command.letter == "c":
+            args = (command.args[4], command.args[5])
+        elif command.letter == "a":
+            args = (command.args[5], command.args[6])
+        # For lines we have to adjust args 0 and 1
+        # for v and h we have to adjust arg 0
+        # for c we have to adjust 4 and 5
+        # for s it's 2 and 3
+        # for q it's 2 and 3
+        # for t it's 0 and 1
+        # for a it's 5 and 6
+
+        inkex.utils.debug(command)
+
+        # Check whether that segment has already been tagged 
+        if  "thickness" in str(command):
+
+            thickness_term_x = args[0]
+
+            # Get the terms of the calculation
+            regex = r"(?P<offset>-?\d+(\.\d+)?)(?P<calc>(?P<factor>[-+]?\d+(\.\d+))?(?P<operator>[-+/\*]?)thickness)*"
+
+            if "thickness" in args[0]:
+
+                result_x = re.search(regex, args[0], re.MULTILINE)
+                # inkex.utils.debug(result_x.groupdict())
+
+                #The regex also matches when there is 
+
+                # Mathematical notations are a bit tricky, as we need to look at a series of factors
+                # The regex only matches if "thickness" is in there, so there is no factor 0
+                if result_x.group('factor'):
+                    angle_x = float(result_x.group('factor'))
+                # If there is no factor, a.k.a. no number, we need to look at the operator to determine wether it is + or -
+                else: 
+                    angle_x = -1.0 if result_x.group('operator') == "-" else 1.0
+
+                # Now that we have the terms of the calculation, we can adjust that already adjusted segment even further
+                # the length is always the original length plus half the gap minus the cos/sin of the gaps angle times thickness
+                # in this case we need to take the factors from the tagges calculation and just add the new ones on top
+
+                length_x = float(result_x.group('offset')) + (gap.dx/2) 
+                angle_x = truncate(angle_x - (cos(gap.angle)/2), 15)
+
+                if angle_x == 0:
+                    thickness_term_x = f"{length_x}"
+                elif angle_x == 1:
+                    thickness_term_x = f"{{{length_x}+thickness}}"
+                elif angle_x == -1:
+                    thickness_term_x = f"{{{length_x}-thickness}}"
+                else:
+                    thickness_term_x = "{{{}{:+}*thickness}}".format(length_x,angle_x)
+
+            if len(args) > 1:
+                thickness_term_y = args[1]
+                if "thickness" in args[1]:
+                    result_y = re.search(regex, args[1], re.MULTILINE)
+                    # inkex.utils.debug(result_y.groupdict())
+
+                    if result_y.group('factor'):
+                        angle_y = float(result_y.group('factor'))
+                    # If there is no factor, a.k.a. no number, we need to look at the operator to determine wether it is + or -
+                    else: 
+                        if result_y.group('operator') == "-":
+                            angle_y = -1.0
+                        elif result_y.group('operator') == "+":
+                            angle_y = +1.0
+                    
+                    length_y = float(result_y.group('offset')) + (gap.dy/2)
+                    angle_y = truncate(angle_y - (sin(gap.angle)/2), 15)
+
+                    if angle_y == 0:
+                        thickness_term_y = f"{length_y}"
+                    elif angle_y == 1:
+                        thickness_term_y = f"{{{length_y}+thickness}}"
+                    elif angle_y == -1:
+                        thickness_term_y = f"{{{length_y}-thickness}}"
+                    else:
+                        thickness_term_y = "{{{}{:+}*thickness}}".format(length_y,angle_y)
+            else: 
+                thickness_term_y = ""
+            calculation = (thickness_term_x, thickness_term_y)
+        else:
+            angle_x = truncate(-cos(gap.angle)/2, 15)
+            angle_y = truncate(-sin(gap.angle)/2, 15)
+            length_x = float(args[0])+(gap.dx/2)
+
+            # I know this is ugly, because this means that both h and v use the first parameter in the tuple, which is wrong for v where the first term should be 0
+            if len(args) > 1:
+                length_y = float(args[1])+(gap.dy/2)
+                thickness_term_y = f"{length_y}" if angle_y == 0.0 else f"{{{length_y}+thickness}}" if angle_y == 1.0 else f"{{{length_y}-thickness}}" if angle_y == -1.0 else "{{{}{:+}*thickness}}".format(length_y,angle_y)
+            else: 
+                thickness_term_y = ""
+
+            thickness_term_x = f"{length_x}" if angle_x == 0.0 else f"{{{length_x}+thickness}}" if angle_x == 1.0 else f"{{{length_x}-thickness}}" if angle_x == -1.0 else "{{{}{:+}*thickness}}".format(length_x,angle_x)
+            calculation = (thickness_term_x, thickness_term_y)
+            inkex.utils.debug(f"Segment is fresh {calculation} {gap} {gap.angle}")
+        return calculation
 
     # returns a command with tagged parameters
     def tagCommand(self, command, thickness):
@@ -547,12 +497,14 @@ class LaserSVG(inkex.EffectExtension):
         else:
             return (0, 0)
 
-    #Return the endpoint coordinates of an absolute command
-    # def getCommandEndpoint(self, command):
-    #     if command.letter == "L":
-    #         return (command.args)
-    #     elif command.letter == "V":
-    #         return 
+    # Return the endpoint coordinates of an absolute command
+    def getCommandEndpoint(self, command, previous):
+        if command.letter == "L":
+            return (command.args)
+        elif command.letter == "H":
+            return command.to_line(previous).args
+        elif command.letter == "V":
+            return command.to_line(previous).args
 
 
 
