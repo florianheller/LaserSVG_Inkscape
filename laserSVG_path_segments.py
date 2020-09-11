@@ -44,7 +44,7 @@ class LaserSVG(inkex.EffectExtension):
         etree.register_namespace("laser", self.LASER_NAMESPACE)
         inkex.utils.NSS["laser"] = self.LASER_NAMESPACE
 
-        inkex.utils.debug(self.options)
+        # inkex.utils.debug(self.options)
 
         # If nothing is selected, we can't do anything
         if not self.svg.selected:
@@ -150,11 +150,9 @@ class LaserSVG(inkex.EffectExtension):
         # Check for every path segment that is of size length
         for index,command in enumerate(path.original_path.to_relative()): #Easier in relative mode
             commandLength = self.getCommandLength(command)
-            inkex.utils.debug(f"{command} {commandLength}")
             if commandLength is not None:
                 if abs(commandLength-length) < 1:
                 # Now get the coordinates to draw a line from the absolute mode path
-                # TODO: handle Move and Close and H and V 
 
                     line = etree.SubElement(layer, "line")
                     line.set("x1", self.getCommandEndpoint(path.original_path.to_absolute()[index], path.original_path.to_absolute()[index-1])[0])
@@ -228,9 +226,7 @@ class LaserSVG(inkex.EffectExtension):
         cps = []
         for cp in path.original_path.proxy_iterator():
             cps.append(cp.previous_end_point)
-        # inkex.utils.debug(cps)
 
-            # for cp in segment.end_point:
         for index,command in enumerate(path.original_path.to_relative()):
             if index in segments:
                 # if index > 1:
