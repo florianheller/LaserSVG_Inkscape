@@ -6,7 +6,7 @@
         <page name="tag_all" gui-text="Tag all">
                 <param name="desc1" type="description">This option turns all segments of the selected path that have the same length as the material thickness defined in the LaserSVG Control panel into parametric ones</param>
         </page>
-        <page name="tag_selected" gui-text="Tag Selected">
+        <page name="tag_selected" gui-text="Tag selected">
                 <param name="desc1" type="description">This option turns the tags the segment between the two selected path nodes as being of material thickness.</param>
         </page>
         <page name="tag_selection" gui-text="Tag selection">
@@ -33,10 +33,7 @@ In a second pass, this information will be mapped onto the original paths and th
                 <option value="2">Apply selection</option>
             </param>
         </page>
-        <page name="help" gui-text="Help">
-            <label xml:space="preserve">This extension adds {thickness} labels to the path template of a LaserSVG file.</label>
-        </page>
-        <page name="kerf" gui-text="Kerf Adjustment">
+         <page name="kerf" gui-text="Kerf adjustment">
                 <param name="desc1" type="description">Here you can specify wether the selected path segments should grow or shrink when the kerf-width is adjusted. With certain materials, this setting ensures a tight fit.</param>
                 <param name="kerf_direction" type="optiongroup" gui-text="Kerf adjutment direction">
                     <option value="g">Grow</option>
@@ -44,8 +41,21 @@ In a second pass, this information will be mapped onto the original paths and th
                 </param>
 
         </page>
+        <page name="help" gui-text="Help">
+            <label xml:space="preserve">This extension adds {thickness} labels to the path template of a LaserSVG file. 
+                "Tag all" tags all path segments with the same length as specified in the parameter control panel.
+                "Tag selected" will tag all segments that are selected using Inkscapes node selection tool. 
+                "Tag selection" is a two step process. In the first iteration, it will generate a new layer with markers that correspond to path segments that have the same length as the material thickness specified in the parameter control panel. Remove all lines from this layer that you don't want to be tagged in the path you're editing. The second pass of the tool will then tag the path segments according to the remaining markers. 
+            </label>
+        </page>
+       
     </param>        
-
+    <param name="action" type="optiongroup" gui-text="Default laser operation">
+                <option value="file">File default</option>
+                <option value="none">None</option>
+                <option value="cut">Cut</option>
+                <option value="engrave">Engrave</option>
+    </param>
     <effect>
         <object-type>path</object-type>
                 <effects-menu>

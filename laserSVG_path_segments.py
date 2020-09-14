@@ -38,6 +38,7 @@ class LaserSVG(inkex.EffectExtension):
         pars.add_argument("--selection_process_run", default=1, help="The step number of the two-step process")
         pars.add_argument("--slit_process_run", default=1, help="The step number of the two-step process")
         pars.add_argument("--kerf_direction", default=0, help="The direction in which the kerf-adjustments should be made.")
+        pars.add_argument("--action", default="none", help="The default laser operation")
         pars.add_argument("--tab", help="The selected UI-tab when OK was pressed")
 
     def effect(self):
