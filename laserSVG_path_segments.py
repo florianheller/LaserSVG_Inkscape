@@ -345,9 +345,9 @@ class LaserSVG(inkex.EffectExtension):
             return self.moveTemplate(calculation[0],calculation[1])
         elif command.letter in ['v', 'h']:
             if command.letter == 'h':
-                newCommand = self.horzTemplate(calculation[0])
+                newCommand = self.horzTemplate(calculation[0]) if calculation[1] == "0" else self.lineTemplate(calculation[0],calculation[1])
             elif command.letter == 'v':
-                newCommand = self.vertTemplate(calculation[0])
+                newCommand = self.vertTemplate(calculation[1]) if calculation[0] == "0" else self.lineTemplate(calculation[0],calculation[1])
             return newCommand
         else: # if the command is not handled
             return command
@@ -356,8 +356,12 @@ class LaserSVG(inkex.EffectExtension):
         # The close-command doesn't have any parameters that we would need to adjust
         if command.letter == "z":
             return("","")
-        elif command.letter == "l" or command.letter == "h" or command.letter == "v" or command.letter == "t" or command.letter == "m":
+        elif command.letter == "l" or command.letter == "t" or command.letter == "m":
             args = command.args
+        elif command.letter == "h":
+            args =  commands.args.append('0')
+        elif command.letter == "v":
+            args = ["0"].append(command.args[0])
         elif command.letter == "s" or command.letter == "q":
             args = (command.args[2], command.args[3])
         elif command.letter == "c":
