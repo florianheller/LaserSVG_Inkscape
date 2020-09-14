@@ -205,17 +205,6 @@ class LaserSVG(inkex.EffectExtension):
         template = path.copy().original_path.to_relative()
         thickness = float(self.document.getroot().get("{}material-thickness".format(self.LASER)))
 
-        # inkex.utils.debug("{} {} {}".format(type(path), type(path.original_path), type(path.get_path())))
-
-        l1 = inkex.transforms.DirectedLineSegment((0,0), (0,10))
-        l2 = inkex.transforms.DirectedLineSegment((0,12), (0,20))
-        l3 = inkex.transforms.DirectedLineSegment((12,12), (14,14)) 
-
-        # inkex.utils.debug("Path Absolute {}".format(path.original_path.to_absolute()))
-
-        x = l1.intersect(l2)
-        inkex.utils.debug("Intersect {} {}".format(x, l1.intersect(l3)))
-
         csp_abs = path.original_path.to_absolute().to_superpath()
         # inkex.utils.debug(csp_abs[0])
         # csp = path.original_path
