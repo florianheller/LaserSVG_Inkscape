@@ -247,24 +247,71 @@ class LaserSVG(inkex.EffectExtension):
                 base_dx, base_dy = self.getCommandDelta(command)
                 base_origin_x, base_origin_y = csp_abs[0][index-1][0][0], csp_abs[0][index-1][0][1]
                 # centerpoint = ((base_dx/2),(base_dy/2))
-                centerpoint= (base_origin_x+(base_dx/2), base_origin_y+(base_dy/2))
+                base_center= (base_origin_x+(base_dx/2), base_origin_y+(base_dy/2))
 
-                # self.drawDebugLine("layer1", centerpoint[0], centerpoint[1], centerpoint[0]+((5/2)*cos(c.angle)), centerpoint[1]+((5/2)*sin(c.angle)), "red")
+                # self.drawDebugLine("layer1" , centerpoint[0], centerpoint[1], centerpoint[0]+((5/2)*cos(c.angle)), centerpoint[1]+((5/2)*sin(c.angle)), "red")
 
-                change_l = (cos(c.angle)-cos(gap.angle), sin(c.angle)-sin(gap.angle))
-                change_r = (cos(gap.angle)-cos(c.angle), sin(gap.angle)-sin(c.angle))
+
+
+
+                # TODO: this test should be mod 180° or mod π 
+                #if not truncate(gap.angle,8) == truncate(center.angle,8):
+                # If the segment leading to or from the slit is parallel to the slit base, we do not need to adjust the length of the slit walls
+                inkex.utils.debug(f"{ll.angle} {template[index-2].letter} {center.angle} {rr.angle}")
+
+                if ll.angle - center.angle < 0.0001 and template[index-2].letter != 'm':
+                    calc_ll = self.shortenSlitLeg(thickness, gap, leg, base)
+
+                if truncate(ll.angle,4) != truncate(center.angle,4) or truncate(ll.angle,4) != truncate(center.angle,4):
+
+                    inkex.utils.debug("Not parallel")
+                    # to change the length of the the two adjacent segments we need to calculate some values first:
+
+                    # We assume that the base and it's adjacent walls are orthogonal to each-other (90°)
+                    # This allows us to use the sinus-calulations in a triangle, as the sum of all inner angles in a triangle is 180, 
+                    # and one is fixed to 90, the last angle (opposite of alpha) is then 90-alpha
+
+                    # First we need to transform gap.angle into an inner angle if it is not already the case
+                    alpha = pi+gap.angle if gap.angle < -pi/2 else pi - gap.angle if gap.angle > pi/2 else gap.angle
+                    beta = pi/2-alpha
+
+                    # a/sin(alpha) = b/sin(beta) = c/sin(gamma)
+                    # b is thickness, and gamma is π/2 
+                    c = thickness/sin(beta)
+                    a = thickness*sin(alpha)/sin(beta)
+
+                    inkex.utils.debug(f"The triangle: a {a} alpha {alpha}({degrees(alpha)}) b {thickness} beta {beta}({degrees(beta)}) c {c} ")
+                    inkex.utils.debug(f"l {l.angle} {sin(l.angle)} {cos(l.angle)} \n r {r.angle} {sin(r.angle)} {cos(r.angle)}")
+
+                    delta_l = self.getCommandDelta(template[index-1])
+                    calc_l = (f"{delta_l[0]}", f"{{{delta_l[1]+a/2}+{(0.5/sin(beta))*sin(alpha)}*thickness}}")
+                    #TODO: missing sin and cos factors here
+
+
+                    delta_r = self.getCommandDelta(template[index+1])
+                    calc_r = (f"{delta_r[0]}", f"{{{delta_r[1]+a/2}-{(0.5/sin(beta))*sin(alpha)}*thickness}}")
+
+                    inkex.utils.debug(f"Deltas: {delta_l} {delta_r} \n Calculations left {calc_l} right {calc_r}")
+
+                    if (truncate(ll.angle,8) != truncate(center.angle,8)):
+                        template[index-1] = self.tagCommandWithCalculation(template[index-1], calc_l)
+                    if (truncate(rr.angle,8) != truncate(center.angle,8)): 
+                        template[index+1] = self.tagCommandWithCalculation(template[index+1], calc_r)
+                    #gap_dx, gap_dy = self.getCommandDelta(gap)
+
+
+
+                # change_l = (cos(c.angle)-cos(gap.angle), sin(c.angle)-sin(gap.angle))
+                # change_r = (cos(gap.angle)-cos(c.angle), sin(gap.angle)-sin(c.angle))
                 # If these changes are 0, both the slit base and the top line are parallel, 
                 # thus no need to change the length of l and r
 
                 # Otherwise, we need to change the length
-                if not change_l[0]<0.0001 and not change_l[1]<0.0001 and not change_r[0]<0.000001 and not change_r[1]<0.000001:
-                    inkex.utils.debug("Not parallel")
-                else:
-                    inkex.utils.debug("Parallel")
-
-                # inkex.utils.debug("changes: {} {}".format(change_l, change_r))
+    
                 # If they are parallel, we also can take the centerpoint of the gap
-                gap_center = (gap.x0+(gap.dx/2), gap.y0+(gap.dy/2))
+                # gap_center = (gap.x0+(gap.dx/2), gap.y0+(gap.dy/2))
+
+
 
                 if index >=2:
                     template[index-2] = self.tagCommandWithCalculation(template[index-2], self.tagSlitSegment(template[index-2],gap, center))
