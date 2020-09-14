@@ -34,7 +34,9 @@ class LaserSVGPrimitives(inkex.EffectExtension):
     """Replace the selection's nodes with numbered dots according to the options"""
     def add_arguments(self, pars):
         pars.add_argument("--rect_adjustment", default="none", help="The dimension in which a rect should be adjusted when material thickness changes.")
-        pars.add_argument("--rect_origin", default="none", help="The dimension in which a rect should be adjusted when material thickness changes.")
+        pars.add_argument("--rect_kerf_adjust", default="none", help="The dimension in which a rect should be adjusted when material thickness changes.")
+        pars.add_argument("--rect_origin", default="", help="The dimension in which a rect should be adjusted when material thickness changes.")
+        pars.add_argument("--action", default="none", help="The default laser operation")
         pars.add_argument("--material_thickness", default=3, help="The material thickness")
         pars.add_argument("--tab", help="The selected UI-tab when OK was pressed")
 
@@ -48,7 +50,21 @@ class LaserSVGPrimitives(inkex.EffectExtension):
             element = self.svg.getElementById(elementID)
             if element.tag == "{http://www.w3.org/2000/svg}rect":
                 self.rectangleSettings(element, self.options)
-        
+                if self.options.rect_kerf_adjust != "none":
+                    element.set(inkex.addNS("kerf-adjust", self.LASER_PREFIX),self.options.rect_kerf_adjust)
+                else: 
+                    element.attrib.pop(inkex.addNS("kerf-adjust", self.LASER_PREFIX), None) # Remove it if nothing to do
+
+                if self.options.rect_origin == "":
+                    element.attrib.pop(inkex.addNS("origin", self.LASER_PREFIX), None) # Remove it if nothing to do
+                else:
+                    element.set(inkex.addNS("origin", self.LASER_PREFIX),self.options.rect_origin)
+
+            if self.options.action == "file": 
+                element.attrib.pop(inkex.addNS("action", self.LASER_PREFIX), None) # Remove it if nothing to do
+            else:
+                element.set(inkex.addNS("action", self.LASER_PREFIX),self.options.action)
+
 
         
         # # If nothing is selected, we can't do anything

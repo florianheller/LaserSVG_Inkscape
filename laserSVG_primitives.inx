@@ -28,9 +28,9 @@
                     <hbox> 
                         <param type="optiongroup" name="rect_origin" gui-text="" appearance="radio">
                             <item value="">Top Left</item> 
-                            <item value="tr">Top Right</item> 
-                            <item value="bl">Bottom Left</item>
-                            <item value="br">Bottom Right</item>
+                            <item value="right">Top Right</item> 
+                            <item value="bottom">Bottom Left</item>
+                            <item value="bottom-right">Bottom Right</item>
                             <item value="center">Center</item>
                         </param>
                         <vbox>
@@ -64,11 +64,19 @@
         <page name="circles" gui-text="Circles">
             <param name="material_thickness" type="int" min="0" max="25" gui-text="Material Thickness">3</param>
         </page>
+        <page name="circles" gui-text="Ellipses">
+            <param name="material_thickness" type="int" min="0" max="25" gui-text="Material Thickness">3</param>
+        </page>
         <page name="Help" gui-text="Help">
             <label xml:space="preserve">This extension lets you adjust the LaserSVG parameters for SVG primitives, like circles, rectangles, ellipses. For Pahts, use the path editor.</label>
         </page>
     </param>        
-
+    <param name="action" type="optiongroup" gui-text="Default laser operation">
+                <option value="file">File default</option>
+                <option value="none">None</option>
+                <option value="cut">Cut</option>
+                <option value="engrave">Engrave</option>
+    </param>
     <effect>
         <object-type>path</object-type>
                 <effects-menu>
