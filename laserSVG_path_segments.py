@@ -226,7 +226,7 @@ class LaserSVG(inkex.EffectExtension):
                     ll = inkex.transforms.DirectedLineSegment(cps[index-2],cps[index-1])
                 if index >=1:
                     l = inkex.transforms.DirectedLineSegment(cps[index-1],cps[index])
-                c = inkex.transforms.DirectedLineSegment(cps[index], cps[index+1])
+                center = inkex.transforms.DirectedLineSegment(cps[index], cps[index+1])
                 if index < len(cps)-2:
                     r = inkex.transforms.DirectedLineSegment(cps[index+1], cps[index+2])
                 if index < len(cps)-3:
@@ -267,9 +267,9 @@ class LaserSVG(inkex.EffectExtension):
                 gap_center = (gap.x0+(gap.dx/2), gap.y0+(gap.dy/2))
 
                 if index >=2:
-                    template[index-2] = self.tagCommandWithCalculation(template[index-2], self.tagSlitSegment(template[index-2],gap, template[index]))
+                    template[index-2] = self.tagCommandWithCalculation(template[index-2], self.tagSlitSegment(template[index-2],gap, center))
                 if index < len(cps)-2:
-                    template[index+2] = self.tagCommandWithCalculation(template[index+2], self.tagSlitSegment(template[index+2],gap, template[index]))
+                    template[index+2] = self.tagCommandWithCalculation(template[index+2], self.tagSlitSegment(template[index+2],gap, center))
                 # self.drawDebugLine("layer1", gap_center[0], gap_center[1], gap_center[0]+((5/2)*cos(gap.angle)),gap_center[1]+((5/2)*sin(c.angle)), "limegreen")
                 
 
