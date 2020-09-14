@@ -259,59 +259,19 @@ class LaserSVG(inkex.EffectExtension):
                 # If the segment leading to or from the slit is parallel to the slit base, we do not need to adjust the length of the slit walls
                 inkex.utils.debug(f"{ll.angle} {template[index-2].letter} {center.angle} {rr.angle}")
 
-                if ll.angle - center.angle < 0.0001 and template[index-2].letter != 'm':
-                    calc_ll = self.shortenSlitLeg(thickness, gap, leg, base)
+                if abs(ll.angle - center.angle) > 0.0001 and template[index-2].letter != 'm':
+                    inkex.utils.debug("LL Not parallel")
+                    calc_l = self.shortenSlitLeg(thickness, gap, template[index], template[index-1], l)
+                    inkex.utils.debug(f"Calc l {calc_l}")
+                    template[index-1] = self.tagCommandWithCalculation(template[index-1],calc_l)
 
-                if truncate(ll.angle,4) != truncate(center.angle,4) or truncate(ll.angle,4) != truncate(center.angle,4):
+                if abs(rr.angle - center.angle) > 0.0001 and template[index+2].letter != 'z':
+                    inkex.utils.debug(f"RR Not parallel {rr.angle} {center.angle} {abs(truncate(rr.angle - center.angle, 5))}")
+                    calc_r = self.shortenSlitLeg(thickness, gap, template[index], template[index+1], r)
+                    inkex.utils.debug(f"Calc r {calc_r}")
+                    template[index+1] = self.tagCommandWithCalculation(template[index+1],calc_r)
 
-                    inkex.utils.debug("Not parallel")
-                    # to change the length of the the two adjacent segments we need to calculate some values first:
-
-                    # We assume that the base and it's adjacent walls are orthogonal to each-other (90°)
-                    # This allows us to use the sinus-calulations in a triangle, as the sum of all inner angles in a triangle is 180, 
-                    # and one is fixed to 90, the last angle (opposite of alpha) is then 90-alpha
-
-                    # First we need to transform gap.angle into an inner angle if it is not already the case
-                    alpha = pi+gap.angle if gap.angle < -pi/2 else pi - gap.angle if gap.angle > pi/2 else gap.angle
-                    beta = pi/2-alpha
-
-                    # a/sin(alpha) = b/sin(beta) = c/sin(gamma)
-                    # b is thickness, and gamma is π/2 
-                    c = thickness/sin(beta)
-                    a = thickness*sin(alpha)/sin(beta)
-
-                    inkex.utils.debug(f"The triangle: a {a} alpha {alpha}({degrees(alpha)}) b {thickness} beta {beta}({degrees(beta)}) c {c} ")
-                    inkex.utils.debug(f"l {l.angle} {sin(l.angle)} {cos(l.angle)} \n r {r.angle} {sin(r.angle)} {cos(r.angle)}")
-
-                    delta_l = self.getCommandDelta(template[index-1])
-                    calc_l = (f"{delta_l[0]}", f"{{{delta_l[1]+a/2}+{(0.5/sin(beta))*sin(alpha)}*thickness}}")
-                    #TODO: missing sin and cos factors here
-
-
-                    delta_r = self.getCommandDelta(template[index+1])
-                    calc_r = (f"{delta_r[0]}", f"{{{delta_r[1]+a/2}-{(0.5/sin(beta))*sin(alpha)}*thickness}}")
-
-                    inkex.utils.debug(f"Deltas: {delta_l} {delta_r} \n Calculations left {calc_l} right {calc_r}")
-
-                    if (truncate(ll.angle,8) != truncate(center.angle,8)):
-                        template[index-1] = self.tagCommandWithCalculation(template[index-1], calc_l)
-                    if (truncate(rr.angle,8) != truncate(center.angle,8)): 
-                        template[index+1] = self.tagCommandWithCalculation(template[index+1], calc_r)
-                    #gap_dx, gap_dy = self.getCommandDelta(gap)
-
-
-
-                # change_l = (cos(c.angle)-cos(gap.angle), sin(c.angle)-sin(gap.angle))
-                # change_r = (cos(gap.angle)-cos(c.angle), sin(gap.angle)-sin(c.angle))
-                # If these changes are 0, both the slit base and the top line are parallel, 
-                # thus no need to change the length of l and r
-
-                # Otherwise, we need to change the length
-    
-                # If they are parallel, we also can take the centerpoint of the gap
-                # gap_center = (gap.x0+(gap.dx/2), gap.y0+(gap.dy/2))
-
-
+          
 
                 if index >=2:
                     template[index-2] = self.tagCommandWithCalculation(template[index-2], self.tagSlitSegment(template[index-2],gap, center))
@@ -330,6 +290,36 @@ class LaserSVG(inkex.EffectExtension):
                 # inkex.utils.debug("{}".format(x))
                 #segments-2 and +2 need to be shortened by 0.5*thickness to keep the slit centered
                 #segments-1 and +1 need to be adjusted such that they match
+
+    def shortenSlitLeg(self, thickness, gap, base, leg, leg_line):
+        # We assume that the base and it's adjacent walls are orthogonal to each-other (90°)
+        # This allows us to use the sinus-calulations in a triangle, as the sum of all inner angles in a triangle is 180, 
+        # and one is fixed to 90, the last angle (opposite of alpha) is then 90-alpha
+
+        # First we need to transform gap.angle into an inner angle if it is not already the case
+        alpha = pi+gap.angle if gap.angle < -pi/2 else pi - gap.angle if gap.angle > pi/2 else gap.angle
+        beta = pi/2-alpha
+
+        # a/sin(alpha) = b/sin(beta) = c/sin(gamma)
+        # b is thickness, and gamma is π/2 
+        c = thickness/sin(beta)
+        a = thickness*sin(alpha)/sin(beta)
+
+        inkex.utils.debug(f"The triangle: a {a} alpha {alpha}({degrees(alpha)}) b {thickness} beta {beta}({degrees(beta)}) c {c} ")
+        # inkex.utils.debug(f"l {l.angle} {sin(l.angle)} {cos(l.angle)} \n r {r.angle} {sin(r.angle)} {cos(r.angle)}")
+
+        delta = self.getCommandDelta(leg)
+        sign = '+' if sin(leg_line.angle) > 0 else '-'
+        calc = (f"{delta[0]}", f"{{{delta[1]+a/2}{sign}{(0.5/sin(beta))*sin(alpha)}*thickness}}")
+        #TODO: missing sin and cos factors here toi make it generic
+
+
+
+        # delta_r = self.getCommandDelta(template[index+1])
+        # calc_r = (f"{delta_r[0]}", f"{{{delta_r[1]+a/2}-{(0.5/sin(beta))*sin(alpha)}*thickness}}")
+
+        inkex.utils.debug(f"Deltas: {delta}  \n Calculations {calc}")
+        return calc
 
     def tagSegmentsInPath(self, path, segments):
         template = path.copy().original_path.to_relative()
