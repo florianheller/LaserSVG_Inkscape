@@ -41,6 +41,10 @@ In a second pass, this information will be mapped onto the original paths and th
                 </param>
 
         </page>
+        <page name="settings" gui-text="Settings">
+            <param name="desc2" type="description">Some path segments might not have a length associated. This interferes with automatically adjusting the length for the slit walls. Leave this unchecked to adjust the length of slit walls adjacent to such segments anyway.</param>
+            <param type="bool" name="assume_parallel" gui-text="Assume slits parallel">false</param>
+        </page>
         <page name="help" gui-text="Help">
             <label xml:space="preserve">This extension adds {thickness} labels to the path template of a LaserSVG file. 
                 "Tag all" tags all path segments with the same length as specified in the parameter control panel.

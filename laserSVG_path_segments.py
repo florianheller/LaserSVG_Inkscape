@@ -24,7 +24,7 @@ import math
 import inkex
 import re
 from lxml import etree
-from math import sqrt, atan2, pi, sin, cos, trunc
+from math import sqrt, atan2, pi, sin, cos, trunc, degrees, copysign
 
 class LaserSVG(inkex.EffectExtension):
 
@@ -39,6 +39,7 @@ class LaserSVG(inkex.EffectExtension):
         pars.add_argument("--slit_process_run", default=1, help="The step number of the two-step process")
         pars.add_argument("--kerf_direction", default=0, help="The direction in which the kerf-adjustments should be made.")
         pars.add_argument("--action", default="none", help="The default laser operation")
+        pars.add_argument("--assume_parallel", default=False, help="Assume segment and slit base to be parallel.")
         pars.add_argument("--tab", help="The selected UI-tab when OK was pressed")
 
     def effect(self):
@@ -212,7 +213,7 @@ class LaserSVG(inkex.EffectExtension):
         # for segment in csp.proxy_iterator():
         #     for point in csp.control_points:
         #         inkex.utils.debug("{} {}".format(segment, point))
-        # Store away the original control points in absolute values
+        # Store away the original control points in absolute values, we need these to draw the selection lines
         cps = []
         for cp in path.original_path.proxy_iterator():
             cps.append(cp.previous_end_point)
@@ -222,6 +223,7 @@ class LaserSVG(inkex.EffectExtension):
                 # if index > 1:
                     # i = command.control_points(csp[index], csp[index-1], csp[index-2])
                     # inkex.utils.debug(cps[index])
+                ll, l, center, r, rr = None, None, None, None, None
                 if index >=2:
                     ll = inkex.transforms.DirectedLineSegment(cps[index-2],cps[index-1])
                 if index >=1:
@@ -234,7 +236,7 @@ class LaserSVG(inkex.EffectExtension):
 
                 gap = inkex.transforms.DirectedLineSegment(cps[index-1],cps[index+2])
 
-                self.drawDebugLine("layer1", gap.x0, gap.y0, gap.x1, gap.y1, "green")
+                # self.drawDebugLine("layer1", gap.x0, gap.y0, gap.x1, gap.y1, "green")
 
                 #inkex.utils.debug("{} {} {}".format(ll.angle, ll.intersect(rr), rr.angle))
 
@@ -257,26 +259,25 @@ class LaserSVG(inkex.EffectExtension):
                 # TODO: this test should be mod 180° or mod π 
                 #if not truncate(gap.angle,8) == truncate(center.angle,8):
                 # If the segment leading to or from the slit is parallel to the slit base, we do not need to adjust the length of the slit walls
-                inkex.utils.debug(f"{ll.angle} {template[index-2].letter} {center.angle} {rr.angle}")
+                # inkex.utils.debug(f"{ll.angle} {template[index-2].letter} {center.angle} {rr.angle}")
 
-                if abs(ll.angle - center.angle) > 0.0001 and template[index-2].letter != 'm':
-                    inkex.utils.debug("LL Not parallel")
+                if (ll != None and abs(ll.angle - center.angle) > 0.0001) or self.options.assume_parallel == False:
                     calc_l = self.shortenSlitLeg(thickness, gap, template[index], template[index-1], l)
                     inkex.utils.debug(f"Calc l {calc_l}")
                     template[index-1] = self.tagCommandWithCalculation(template[index-1],calc_l)
-
-                if abs(rr.angle - center.angle) > 0.0001 and template[index+2].letter != 'z':
-                    inkex.utils.debug(f"RR Not parallel {rr.angle} {center.angle} {abs(truncate(rr.angle - center.angle, 5))}")
+                # Ignoring z is bullshit, in that case just assume same as above
+                inkex.utils.debug(f"{rr} {template[index+2].letter}")
+                if (rr != None and abs(rr.angle - center.angle) > 0.0001) or self.options.assume_parallel == False :
                     calc_r = self.shortenSlitLeg(thickness, gap, template[index], template[index+1], r)
                     inkex.utils.debug(f"Calc r {calc_r}")
                     template[index+1] = self.tagCommandWithCalculation(template[index+1],calc_r)
 
-          
+                
 
                 if index >=2:
-                    template[index-2] = self.tagCommandWithCalculation(template[index-2], self.tagSlitSegment(template[index-2],gap, center))
+                    template[index-2] = self.tagCommandWithCalculation(template[index-2], self.tagSlitSegment(template[index-2],gap, center, thickness))
                 if index < len(cps)-2:
-                    template[index+2] = self.tagCommandWithCalculation(template[index+2], self.tagSlitSegment(template[index+2],gap, center))
+                    template[index+2] = self.tagCommandWithCalculation(template[index+2], self.tagSlitSegment(template[index+2],gap, center, thickness))
                 # self.drawDebugLine("layer1", gap_center[0], gap_center[1], gap_center[0]+((5/2)*cos(gap.angle)),gap_center[1]+((5/2)*sin(c.angle)), "limegreen")
                 
 
@@ -297,28 +298,24 @@ class LaserSVG(inkex.EffectExtension):
         # and one is fixed to 90, the last angle (opposite of alpha) is then 90-alpha
 
         # First we need to transform gap.angle into an inner angle if it is not already the case
-        alpha = pi+gap.angle if gap.angle < -pi/2 else pi - gap.angle if gap.angle > pi/2 else gap.angle
+        alpha = pi+gap.angle if gap.angle < -pi/2 else gap.angle - pi if gap.angle > pi/2 else gap.angle
         beta = pi/2-alpha
+        beta = beta-pi if beta > pi/2 else beta+pi if beta < -pi/2 else beta
 
         # a/sin(alpha) = b/sin(beta) = c/sin(gamma)
         # b is thickness, and gamma is π/2 
         c = thickness/sin(beta)
         a = thickness*sin(alpha)/sin(beta)
 
-        inkex.utils.debug(f"The triangle: a {a} alpha {alpha}({degrees(alpha)}) b {thickness} beta {beta}({degrees(beta)}) c {c} ")
+        # inkex.utils.debug(f"The triangle: a {a} alpha {alpha}({degrees(alpha)}) b {thickness} beta {beta}({degrees(beta)}) c {c} ")
         # inkex.utils.debug(f"l {l.angle} {sin(l.angle)} {cos(l.angle)} \n r {r.angle} {sin(r.angle)} {cos(r.angle)}")
 
         delta = self.getCommandDelta(leg)
-        sign = '+' if sin(leg_line.angle) > 0 else '-'
+        sign = "-" #'+' if sin(leg_line.angle) < 0 else '-'
         calc = (f"{delta[0]}", f"{{{delta[1]+a/2}{sign}{(0.5/sin(beta))*sin(alpha)}*thickness}}")
         #TODO: missing sin and cos factors here toi make it generic
 
-
-
-        # delta_r = self.getCommandDelta(template[index+1])
-        # calc_r = (f"{delta_r[0]}", f"{{{delta_r[1]+a/2}-{(0.5/sin(beta))*sin(alpha)}*thickness}}")
-
-        inkex.utils.debug(f"Deltas: {delta}  \n Calculations {calc}")
+        # inkex.utils.debug(f"Deltas: {delta}  \n Calculations {calc}, sin leg line {sin(leg_line.angle)}")
         return calc
 
     def tagSegmentsInPath(self, path, segments):
@@ -352,7 +349,7 @@ class LaserSVG(inkex.EffectExtension):
         else: # if the command is not handled
             return command
 
-    def tagSlitSegment(self, command, gap, centerpiece):
+    def tagSlitSegment(self, command, gap, centerpiece, thickness):
         # The close-command doesn't have any parameters that we would need to adjust
         if command.letter == "z":
             return("","")
@@ -375,6 +372,17 @@ class LaserSVG(inkex.EffectExtension):
         # for q it's 2 and 3
         # for t it's 0 and 1
         # for a it's 5 and 6
+
+
+        # First we need to transform gap.angle into an inner angle if it is not already the case
+        alpha = pi+gap.angle if gap.angle < -pi/2 else gap.angle - pi if gap.angle > pi/2 else gap.angle
+        # test_alpha = pi+rtest if rtest < -pi/2 else pi - rtest if rtest > pi/2 else rtest
+        beta = pi/2-alpha
+        beta = beta-pi if beta > pi/2 else beta+pi if beta < -pi/2 else beta
+        # a/sin(alpha) = b/sin(beta) = c/sin(gamma)
+        # b is thickness, and gamma is π/2 
+        c = thickness/sin(beta)
+        a = thickness*sin(alpha)/sin(beta)
 
         inkex.utils.debug(command)
 
@@ -405,8 +413,10 @@ class LaserSVG(inkex.EffectExtension):
                 # the length is always the original length plus half the gap minus the cos/sin of the gaps angle times thickness
                 # in this case we need to take the factors from the tagges calculation and just add the new ones on top
 
-                length_x = float(result_x.group('offset')) + (gap.dx/2) 
-                angle_x = truncate(angle_x - (cos(gap.angle)/2), 15)
+                # length_x = float(result_x.group('offset')) + (gap.dx/2)  if centerpiece.angle > 0 else float(result_x.group('offset')) - (gap.dx/2) 
+                # angle_x =  truncate(angle_x - (cos(centerpiece.angle)/2), 5) if centerpiece.angle > 0 else truncate(angle_x + (cos(centerpiece.angle)/2), 5)
+                length_x = float(result_x.group('offset')) + copysign(gap.dx/2, -centerpiece.angle)
+                angle_x =  truncate(angle_x - (cos(centerpiece.angle)/2), 5) if centerpiece.angle > 0 else truncate(angle_x + (cos(centerpiece.angle)/2), 5)
 
                 if angle_x == 0:
                     thickness_term_x = f"{length_x}"
@@ -415,7 +425,7 @@ class LaserSVG(inkex.EffectExtension):
                 elif angle_x == -1:
                     thickness_term_x = f"{{{length_x}-thickness}}"
                 else:
-                    thickness_term_x = "{{{}{:+}*thickness}}".format(length_x,angle_x)
+                    thickness_term_x = "{{{}{:+}*thickness}}".format(truncate(length_x, 5),truncate(angle_x, 5))
 
             if len(args) > 1:
                 thickness_term_y = args[1]
@@ -432,8 +442,8 @@ class LaserSVG(inkex.EffectExtension):
                         elif result_y.group('operator') == "+":
                             angle_y = +1.0
                     
-                    length_y = float(result_y.group('offset')) + (gap.dy/2)
-                    angle_y = truncate(angle_y - (sin(gap.angle)/2), 15)
+                    length_y = float(result_y.group('offset')) + (gap.dy/2) if centerpiece.angle > 0 else float(result_y.group('offset'))-(gap.dy/2)
+                    angle_y = truncate(angle_y +0.5*sin(alpha)/sin(beta), 5) if gap.angle < 0 else truncate(angle_y - 0.5*sin(alpha)/sin(beta), 5)
 
                     if angle_y == 0:
                         thickness_term_y = f"{length_y}"
@@ -442,25 +452,31 @@ class LaserSVG(inkex.EffectExtension):
                     elif angle_y == -1:
                         thickness_term_y = f"{{{length_y}-thickness}}"
                     else:
-                        thickness_term_y = "{{{}{:+}*thickness}}".format(length_y,angle_y)
+                        thickness_term_y = "{{{}{:+}*thickness}}".format(truncate(length_y, 5),truncate(angle_y, 5))
             else: 
                 thickness_term_y = ""
             calculation = (thickness_term_x, thickness_term_y)
         else:
-            angle_x = truncate(-cos(gap.angle)/2, 15)
-            angle_y = truncate(-sin(gap.angle)/2, 15)
-            length_x = float(args[0])+(gap.dx/2)
+            # inkex.utils.debug(centerpiece)
 
-            # I know this is ugly, because this means that both h and v use the first parameter in the tuple, which is wrong for v where the first term should be 0
+            # Change in Y-direction is cos(centerpiece.angle)* {thickness} *sin(alpha)/sin(beta) 
+            # change in X-direction is 
+
+            angle_x = truncate(-cos(centerpiece.angle)/2 , 5) if centerpiece.angle > 0 else truncate(cos(centerpiece.angle)/2 , 5)
+            angle_y = truncate(0.5*sin(alpha)/sin(beta), 5) if gap.angle < 0 else truncate(-0.5*sin(alpha)/sin(beta), 5)
+            length_x = float(args[0])+(gap.dx/2) if centerpiece.angle > 0 else float(args[0])-(gap.dx/2)
+            inkex.utils.debug(f"C angle {centerpiece.angle}, gap angle {gap.angle} {alpha} {beta} ")
+            inkex.utils.debug(f"Using {angle_x} and {angle_y} would result in {5*angle_x} {5*angle_y}")
+
             if len(args) > 1:
-                length_y = float(args[1])+(gap.dy/2)
-                thickness_term_y = f"{length_y}" if angle_y == 0.0 else f"{{{length_y}+thickness}}" if angle_y == 1.0 else f"{{{length_y}-thickness}}" if angle_y == -1.0 else "{{{}{:+}*thickness}}".format(length_y,angle_y)
+                length_y = float(args[1])+(gap.dy/2) if centerpiece.angle > 0 else float(args[1])-(gap.dy/2)
+                thickness_term_y = f"{length_y}" if angle_y == 0.0 else f"{{{length_y}+thickness}}" if angle_y == 1.0 else f"{{{length_y}-thickness}}" if angle_y == -1.0 else "{{{}{:+}*thickness}}".format(truncate(length_y, 5),truncate(angle_y, 5))
             else: 
                 thickness_term_y = ""
 
-            thickness_term_x = f"{length_x}" if angle_x == 0.0 else f"{{{length_x}+thickness}}" if angle_x == 1.0 else f"{{{length_x}-thickness}}" if angle_x == -1.0 else "{{{}{:+}*thickness}}".format(length_x,angle_x)
+            thickness_term_x = f"{length_x}" if angle_x == 0.0 else f"{{{length_x}+thickness}}" if angle_x == 1.0 else f"{{{length_x}-thickness}}" if angle_x == -1.0 else "{{{}{:+}*thickness}}".format(truncate(length_x, 5),truncate(angle_x, 5))
             calculation = (thickness_term_x, thickness_term_y)
-            inkex.utils.debug(f"Segment is fresh {calculation} {gap} {gap.angle}")
+            inkex.utils.debug(f"Segment is fresh {calculation}")
         return calculation
 
     # returns a command with tagged parameters
