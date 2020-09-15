@@ -12,6 +12,9 @@
             </param>
             <param type="bool" name="interactive" gui-text="Make file interactive">true</param>
         </page>
+        <page name="Scale" gui-text="Scale">
+            <param name="scale" type="float" min="50" max="500" gui-text="Scale">100</param>    
+        </page>
         <page name="Help" gui-text="Help">
             <label xml:space="preserve">This extension lets you control the main parameters of a LaserSVG file. It allows you to change the material thickness, kerf, and joint-type. When changing these values, the rendering will update. 
 Making the file interactive means that LaserSVG adds the necessary code to the file, such that you can modify the main parameters in your web-browser.</label>
