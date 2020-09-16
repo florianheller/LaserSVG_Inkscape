@@ -261,13 +261,13 @@ class LaserSVG(inkex.EffectExtension):
                 # If the segment leading to or from the slit is parallel to the slit base, we do not need to adjust the length of the slit walls
                 # inkex.utils.debug(f"{ll.angle} {template[index-2].letter} {center.angle} {rr.angle}")
 
-                if (ll != None and abs(ll.angle - center.angle) > 0.0001) or self.options.assume_parallel == False:
+                if (ll != None and abs(ll.angle - center.angle) > 0.0001) or self.options.assume_parallel == "false":
                     calc_l = self.shortenSlitLeg(thickness, gap, template[index], template[index-1], l)
                     inkex.utils.debug(f"Calc l {calc_l}")
                     template[index-1] = self.tagCommandWithCalculation(template[index-1],calc_l)
                 # Ignoring z is bullshit, in that case just assume same as above
                 inkex.utils.debug(f"{rr} {template[index+2].letter}")
-                if (rr != None and abs(rr.angle - center.angle) > 0.0001) or self.options.assume_parallel == False :
+                if (rr != None and abs(rr.angle - center.angle) > 0.0001) or self.options.assume_parallel == "false" :
                     calc_r = self.shortenSlitLeg(thickness, gap, template[index], template[index+1], r)
                     inkex.utils.debug(f"Calc r {calc_r}")
                     template[index+1] = self.tagCommandWithCalculation(template[index+1],calc_r)
