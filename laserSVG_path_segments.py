@@ -483,16 +483,15 @@ class LaserSVG(inkex.EffectExtension):
 
     # returns a command with tagged parameters
     def tagCommand(self, command, thickness):
+        threshold = 0.1
         if command.letter == 'l':
             x = command.args[0]
             y = command.args[1]
 
             # In non-orthogonal cases, there can be a minimal difference due to floating points
-            difference = (x*x + y*y) - (thickness*thickness)
-
-            if abs(difference) < 0.1:
-                factor_x = truncate(x/thickness, 15)
-                factor_y = truncate(y/thickness, 15)
+            if abs((x*x + y*y) - (thickness*thickness)) < threshold:
+                factor_x = truncate(x/thickness, 5)
+                factor_y = truncate(y/thickness, 5)
                 return self.lineTemplate("0" if factor_x == 0 else "{thickness}" if factor_x == 1 else "{-thickness}" if factor_x == -1 else "{{{}*thickness}}".format(factor_x),
                     "0" if factor_y == 0 else "{thickness}" if factor_y == 1 else "{-thickness}" if factor_y == -1 else "{{{}*thickness}}".format(factor_y))
             else:
@@ -500,15 +499,15 @@ class LaserSVG(inkex.EffectExtension):
         elif command.letter in ['v', 'h']:
             x = command.args[0]
 
-            if  abs(x*x - thickness*thickness) < 0.1:
-                ratio = truncate(x / thickness, 15)
+            if  abs(x*x - thickness*thickness) < threshold:
+                ratio = truncate(x / thickness, 3)
                 pattern = ""
                 if ratio == 1:
                     pattern = "{thickness}"
                 elif ratio == -1:
                     pattern = "{-thickness}"
                 else:
-                    pattern = "{{{}*thickness}}".format( (x / thickness))
+                    pattern = f"{{{ratio}*thickness}}"
                 if command.letter == 'h':
                     newCommand = self.horzTemplate(pattern)
                 elif command.letter == 'v':
