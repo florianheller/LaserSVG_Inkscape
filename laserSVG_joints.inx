@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+    <name>Joint Editor</name>
+    <id>org.inkscape.filter.lasersvg_joints</id>
+    <param name="tab" type="notebook">
+        <page name="rectangles" gui-text="Rectangles">
+            <hbox>
+                <image>joint_left.svg</image>
+                <param type="optiongroup" name="joint_left" gui-text="" appearance="combo">
+                    <item value="">None</item>
+                    <item value="finger">Finger</item>
+                    <item value="finger_compact">Finger Compact</item>
+                    <item value="flap">Flap</item>
+                    <item value="t-slot">T-Slot</item>
+                </param>
+                <param type="optiongroup" name="joint_left_direction" gui-text="" appearance="combo">
+                    <item value="inside">Inside</item>
+                    <item value="outside">Outside</item>
+                </param>
+            </hbox>
+            <hbox>
+                <image>joint_top.svg</image>
+                <param type="optiongroup" name="joint_top" gui-text="" appearance="combo">
+                    <item value="">None</item>
+                    <item value="finger">Finger</item>
+                    <item value="finger_compact">Finger Compact</item>
+                    <item value="flap">Flap</item>
+                    <item value="t-slot">T-Slot</item>
+                </param>
+                <param type="optiongroup" name="joint_top_direction" gui-text="" appearance="combo">
+                    <item value="inside">Inside</item>
+                    <item value="outside">Outside</item>
+                </param>
+            </hbox>
+            <hbox>
+                <image>joint_right.svg</image>
+                <param type="optiongroup" name="joint_right" gui-text="" appearance="combo">
+                    <item value="">None</item>
+                    <item value="finger">Finger</item>
+                    <item value="finger_compact">Finger Compact</item>
+                    <item value="flap">Flap</item>
+                    <item value="t-slot">T-Slot</item>
+                </param>
+                <param type="optiongroup" name="joint_right_direction" gui-text="" appearance="combo">
+                    <item value="inside">Inside</item>
+                    <item value="outside">Outside</item>
+                </param>
+            </hbox>
+            <hbox>
+                <image>joint_bottom.svg</image>
+                <param type="optiongroup" name="joint_bottom" gui-text="" appearance="combo">
+                    <item value="">None</item>
+                    <item value="finger">Finger</item>
+                    <item value="finger_compact">Finger Compact</item>
+                    <item value="flap">Flap</item>
+                    <item value="t-slot">T-Slot</item>
+                </param>
+                <param type="optiongroup" name="joint_bottom_direction" gui-text="" appearance="combo">
+                    <item value="inside">Inside</item>
+                    <item value="outside">Outside</item>
+                </param>
+            </hbox>
+        </page>
+        <page name="paths" gui-text="Paths">
+            <param type="optiongroup" name="path_joint" gui-text="Joint type" appearance="radio">
+                <item value="">None</item>
+                <item value="finger">Finger</item>
+                <item value="finger_compact">Finger Compact</item>
+                <item value="flap">Flap</item>
+                <item value="t-slot">T-Slot</item>
+            </param>
+        </page>
+        <page name="Help" gui-text="Help">
+            <label xml:space="preserve">This extension lets you adjust the joint type for rectangles and paths.</label>
+        </page>
+    </param>        
+    <effect>
+        <object-type>path</object-type>
+                <effects-menu>
+                    <submenu name="LaserSVG"/>
+                </effects-menu>
+    </effect>
+    <script>
+        <command location="inx" interpreter="python">laserSVG_joints.py</command>
+    </script>
+</inkscape-extension>
