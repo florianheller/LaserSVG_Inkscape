@@ -358,9 +358,9 @@ class LaserSVG(inkex.EffectExtension):
         elif command.letter == "l" or command.letter == "t" or command.letter == "m":
             args = command.args
         elif command.letter == "h":
-            args =  commands.args.append('0')
+            args = (command.args[0], 0)
         elif command.letter == "v":
-            args = ["0"].append(command.args[0])
+            args = (0, command.args[0])
         elif command.letter == "s" or command.letter == "q":
             args = (command.args[2], command.args[3])
         elif command.letter == "c":
