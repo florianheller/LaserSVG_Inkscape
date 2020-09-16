@@ -498,7 +498,7 @@ class LaserSVG(inkex.EffectExtension):
         elif command.letter in ['v', 'h']:
             x = command.args[0]
 
-            if  x * x == thickness * thickness:
+            if  abs(x*x - thickness*thickness) < 0.1:
                 ratio = truncate(x / thickness, 15)
                 pattern = ""
                 if ratio == 1:
