@@ -111,6 +111,8 @@ class LaserSVG(inkex.EffectExtension):
         pass
     class moveTemplate(template, inkex.paths.move):
         pass
+    class curveTemplate(template, inkex.paths.curve):
+        pass
 
     def tagSegments(self, path, length):
 
@@ -515,6 +517,16 @@ class LaserSVG(inkex.EffectExtension):
                 return newCommand
             else: #if the length does not match
                 return command
+        elif command.letter == 'c':
+            if  abs(self.getCommandLength(command)-thickness) < threshold:
+                ratio_x = command.args[4] / thickness
+                term_x = "0" if ratio_x == 0 else "{thickness}" if ratio_x == 1 else "{-thickness}" if ratio_x == -1 else f"{{{ratio_x}*thickness}}"
+                ratio_y = command.args[5] / thickness
+                term_y = "0" if ratio_y == 0 else "{thickness}" if ratio_y == 1 else "{-thickness}" if ratio_y == -1 else f"{{{ratio_y}*thickness}}"
+                newCommand = self.curveTemplate(command.args[0], command.args[1], command.args[2], command.args[3], term_x, term_y)
+            else:
+                return command
+
         else: # if the command is not handled
             return command
 
