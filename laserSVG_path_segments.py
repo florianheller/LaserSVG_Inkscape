@@ -143,15 +143,14 @@ class LaserSVG(inkex.EffectExtension):
         return result
 
     def addSelectionLayer(self, path, length, layername, readable_layername, layercolor):
-        # In Inkscape, layers are SVG-Groups with a special label. 
-        if not self.document.getroot().findall(".//{http://www.w3.org/2000/svg}g[@id='{}']".format(layername)):
-            layer = etree.SubElement(self.document.getroot(), "g")
-            layer.set("id", layername)
-            layer.set("inkscape:label",  readable_layername)
-        else:
+        # Create an additional layer for the highlights or just 
+        if self.document.getroot().find(f".//svg:g[@id='{layername}']", namespaces=inkex.utils.NSS) is not None:
             layer = self.svg.getElementById(layername)
-        # Check for every path segment that is of size length
-
+        else:
+            layer = self.svg.add(inkex.Group.new(readable_layername, is_layer=True))
+            layer.set("id", layername)
+           
+        # Store away the absolute endpoints of the commands to be able to draw the highlights
         csp_abs = path.original_path.to_absolute().to_superpath()
         endpoints = [path.original_path.to_absolute()[0].args]
         for x in csp_abs.to_segments():
@@ -160,6 +159,7 @@ class LaserSVG(inkex.EffectExtension):
             elif x.letter == 'C':
                 endpoints.append((x.args[4],x.args[5]))
 
+        # Check for every path segment that is of size length
         for index,command in enumerate(path.original_path.to_relative()): #Easier in relative mode
             commandLength = self.getCommandLength(command)
             if commandLength is not None:
