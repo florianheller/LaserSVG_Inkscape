@@ -145,7 +145,7 @@ class LaserSVG(inkex.EffectExtension):
 
     def addSelectionLayer(self, path, length, layername, readable_layername, layercolor):
         # In Inkscape, layers are SVG-Groups with a special label. 
-        if not self.document.getroot().findall(".//g[@id='{}']".format(layername)):
+        if not self.document.getroot().findall(".//{http://www.w3.org/2000/svg}g[@id='{}']".format(layername)):
             layer = etree.SubElement(self.document.getroot(), "g")
             layer.set("id", layername)
             layer.set("inkscape:label",  readable_layername)
