@@ -19,7 +19,6 @@
 #
 
 # see https://launchpadlibrarian.net/235367843/debug_sel_nodes.py for more details
-import math
 
 import inkex
 import re
@@ -565,7 +564,6 @@ class LaserSVG(inkex.EffectExtension):
         else:
             return (0, 0)
 
-
     def drawDebugLine(self, layer, x1, y1, x2, y2, color):
         layer = self.svg.getElementById(layer)
 
@@ -578,15 +576,7 @@ class LaserSVG(inkex.EffectExtension):
 
 def truncate(number, digits) -> float:
     stepper = 10.0 ** digits
-    return math.trunc(stepper * number) / stepper
-    # The length of the command needs to be adjusted by dx and dy
-    # def adjustCommandByDelta(self, command, dx, dy):
-    #     if command.letter == 'l':
-
-    #     if command.letter == 'h':
-
-    #     if command.letter == 'v':
-
+    return trunc(stepper * number) / stepper
 
 
 
