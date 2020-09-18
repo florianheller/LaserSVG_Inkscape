@@ -152,17 +152,32 @@ class LaserSVG(inkex.EffectExtension):
         else:
             layer = self.svg.getElementById(layername)
         # Check for every path segment that is of size length
+
+        csp_abs = path.original_path.to_absolute().to_superpath()
+        endpoints = [path.original_path.to_absolute()[0].args]
+        for x in csp_abs.to_segments():
+            if x.letter == 'L':
+                endpoints.append((x.args[0], x.args[1]))
+            elif x.letter == 'C':
+                endpoints.append((x.args[4],x.args[5]))
+
         for index,command in enumerate(path.original_path.to_relative()): #Easier in relative mode
             commandLength = self.getCommandLength(command)
             if commandLength is not None:
-                if abs(commandLength-length) < 1:
+                if abs(commandLength-length) < 0.1:
                 # Now get the coordinates to draw a line from the absolute mode path
-
                     line = etree.SubElement(layer, "line")
-                    line.set("x1", self.getCommandEndpoint(path.original_path.to_absolute()[index], path.original_path.to_absolute()[index-1])[0])
-                    line.set("y1", self.getCommandEndpoint(path.original_path.to_absolute()[index], path.original_path.to_absolute()[index-1])[1])
-                    line.set("x2", self.getCommandEndpoint(path.original_path.to_absolute()[index-1], path.original_path.to_absolute()[index-2])[0])
-                    line.set("y2", self.getCommandEndpoint(path.original_path.to_absolute()[index-1], path.original_path.to_absolute()[index-2])[1])
+                    if index > 1:
+                        line.set("x1", endpoints[index][0])
+                        line.set("y1", endpoints[index][1])
+                        line.set("x2", endpoints[index-1][0])
+                        line.set("y2", endpoints[index-1][1])
+                    else:
+                        #This is the first segment after the move command. 
+                        line.set("x1", endpoints[index-1][0])
+                        line.set("y1", endpoints[index-1][1])
+                        line.set("x2", endpoints[index-1][0] + self.getCommandDelta(command)[0])
+                        line.set("y2", endpoints[index-1][1] + self.getCommandDelta(command)[1])
                     line.set("stroke", layercolor)
                     # Use a similar notation to map the segments as for selected nodes
                     # id:entity:segment_number
@@ -549,16 +564,6 @@ class LaserSVG(inkex.EffectExtension):
             return (command.args[5], command.args[6])
         else:
             return (0, 0)
-
-    # Return the endpoint coordinates of an absolute command
-    def getCommandEndpoint(self, command, previous):
-        if command.letter == "L":
-            return (command.args)
-        elif command.letter == "H":
-            return command.to_line(previous).args
-        elif command.letter == "V":
-            return command.to_line(previous).args
-
 
 
     def drawDebugLine(self, layer, x1, y1, x2, y2, color):
