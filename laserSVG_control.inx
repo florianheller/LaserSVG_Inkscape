@@ -4,7 +4,7 @@
     <id>org.inkscape.filter.lasersvg_control</id>
     <param name="tab" type="notebook">
         <page name="Options" gui-text="Options">
-            <param name="material_thickness" type="float" min="0" max="100" gui-text="Material thickness">3</param>
+            <param name="material_thickness" type="float" precision="2" min="0" max="30" gui-text="Material thickness">3</param>
             <param name="kerf_width" type="float" min="0" max="25" gui-text="Kerf">0.0</param>
             <param name="action" type="optiongroup" gui-text="Default laser operation">
                 <option value="cut">Cut</option>
