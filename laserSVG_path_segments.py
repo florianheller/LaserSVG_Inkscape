@@ -365,6 +365,8 @@ class LaserSVG(inkex.EffectExtension):
             elif command.letter == 'v':
                 newCommand = self.vertTemplate(calculation[1]) if calculation[0] == "0" else self.lineTemplate(calculation[0],calculation[1])
             return newCommand
+        elif command.letter == 'c':
+            return self.curveTemplate(command.args[0], command.args[1], command.args[2], command.args[3], calculation[0], calculation[1])
         else: # if the command is not handled
             return command
 
