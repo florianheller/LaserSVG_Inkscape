@@ -101,7 +101,7 @@ class LaserSVG(inkex.EffectExtension):
 
     class template(object):
         def __str__(self):
-            return self.letter + " " + ", ".join(self.args)
+            return self.letter + " " + ", ".join(map(str, self.args))
     class horzTemplate(template,inkex.paths.horz):
         pass
     class vertTemplate(template, inkex.paths.vert):
@@ -116,14 +116,9 @@ class LaserSVG(inkex.EffectExtension):
     def tagSegments(self, path, length):
 
         template = inkex.paths.Path()
-
-        # inkex.utils.debug(path.original_path.to_superpath())
-        inkex.utils.debug(path.original_path.to_relative())
-
         for command in path.original_path.to_relative():
             # if the length matches, we replace the args with the according tags
            template.append(self.tagCommand(command, length))
-        inkex.utils.debug(template)
         path.set(inkex.addNS("template", self.LASER_PREFIX),template)
 
     def parse_selected_nodes(self, nodes):
