@@ -259,27 +259,36 @@ class LaserSVG(inkex.EffectExtension):
                 # this generates if we draw a vector of half the thickness from there with the same angle as the current base
                 base_dx, base_dy = self.getCommandDelta(command)
                 base_origin_x, base_origin_y = csp_abs[0][index-1][0][0], csp_abs[0][index-1][0][1]
-                # centerpoint = ((base_dx/2),(base_dy/2))
                 base_center= (base_origin_x+(base_dx/2), base_origin_y+(base_dy/2))
 
                 # self.drawDebugLine("layer1" , centerpoint[0], centerpoint[1], centerpoint[0]+((5/2)*cos(c.angle)), centerpoint[1]+((5/2)*sin(c.angle)), "red")
 
+                if (template[index-2].letter) == 'c':
+                    # Calculate a point at the end of the curve
+                    curveCommand = list(csp_abs.to_segments())[index-2]
+                    (tx,ty) = self.bezierTangentXY((1, 1), cps[index-2], (curveCommand.x2, curveCommand.y2), (curveCommand.x3, curveCommand.y3), (curveCommand.x3, curveCommand.y3))
+                    ll_angle = atan2(tx, tx)
+                else: 
+                    ll_angle = ll.angle
 
 
+                if (template[index+2].letter) == 'c':
+                    # Calculate a point at the beginning of the curve
+                    curveCommand = list(csp_abs.to_segments())[index+2]
+                    (tx,ty) = self.bezierTangentXY((0, 0), cps[index+2], (curveCommand.x2, curveCommand.y2), (curveCommand.x3, curveCommand.y3), (curveCommand.x3, curveCommand.y3))
+                    rr_angle = atan2(tx, tx)
+                else: 
+                    rr_angle = rr.angle
 
-                #if not truncate(gap.angle,8) == truncate(center.angle,8):
+
                 # If the segment leading to or from the slit is parallel to the slit base, we do not need to adjust the length of the slit walls
-                # inkex.utils.debug(f"{ll.angle} {template[index-2].letter} {center.angle} {rr.angle}")
-
-                if (ll != None and (abs(ll.angle) - abs(center.angle)) > 0.0001) or self.options.assume_parallel == "false":
+                
+                if (ll != None and (abs(ll_angle) - abs(center.angle)) > 0.0001) or self.options.assume_parallel == "false":
                     calc_l = self.shortenSlitLeg(thickness, gap, template[index], template[index-1], l)
-                    inkex.utils.debug(f"Calc l {calc_l}")
                     template[index-1] = self.tagCommandWithCalculation(template[index-1],calc_l)
-                # Ignoring z is bullshit, in that case just assume same as above
-                inkex.utils.debug(f"{rr} {template[index+2].letter}")
+
                 if (rr != None and (abs(rr.angle) - abs(center.angle)) > 0.0001) or self.options.assume_parallel == "false" :
                     calc_r = self.shortenSlitLeg(thickness, gap, template[index], template[index+1], r)
-                    inkex.utils.debug(f"Calc r {calc_r}")
                     template[index+1] = self.tagCommandWithCalculation(template[index+1],calc_r)
 
                 
