@@ -559,6 +559,64 @@ class LaserSVG(inkex.EffectExtension):
         else:
             return (0, 0)
 
+    # based on MBBezierView.m    original BY MICHAL stackoverflow #4058979
+    def bezierInterpolation(self, t, a, b, c, d):
+        t2 = t * t
+        t3 = t2 * t
+        return a + (-a * 3 + t * (3 * a - a * t)) * t  + (3 * b + t * (-6 * b + b * 3 * t)) * t + (c * 3 - c * 3 * t) * t2 + d * t3
+
+    # Same function but works on (x,y) coordinate pairs
+    def bezierInterpolationXY(self, t, a, b, c, d):
+        t2 = (t[0]*t[0], t[1] * t[1])
+        t3 = ([t2[0] * t[0], t2[1] * t[1]])
+
+        return (a[0] + (-a[0] * 3 + t[0] * (3 * a[0] - a[0] * t[0])) * t[0]  + (3 * b[0] + t[0] * (-6 * b[0] + b[0] * 3 * t[0])) * t[0] + (c[0] * 3 - c[0] * 3 * t[0]) * t2[0] + d * t3[0],
+            a[1] + (-a[1] * 3 + t[1] * (3 * a[1] - a[1] * t[1])) * t[1]  + (3 * b[1] + t[1] * (-6 * b[1] + b[1] * 3 * t[1])) * t[1] + (c[1] * 3 - c[1] * 3 * t[1]) * t2[1] + d[1] * t3[1])
+
+
+    def bezierTangent(self, t, a, b, c, d):
+ 
+        # note that abcd are aka x0 x1 x2 x3
+
+        # the four coefficients ..
+        # A = x3 - 3 * x2 + 3 * x1 - x0
+        # B = 3 * x2 - 6 * x1 + 3 * x0
+        # C = 3 * x1 - 3 * x0
+        # D = x0
+
+        # and then...
+        # Vx = 3At2 + 2Bt + C         
+
+        # first calcuate what are usually know as the coeffients,
+        # they are trivial based on the four control points:
+
+        C1 = ( d - (3.0 * c) + (3.0 * b) - a )
+        C2 = ( (3.0 * c) - (6.0 * b) + (3.0 * a) )
+        C3 = ( (3.0 * b) - (3.0 * a) )
+        C4 = ( a )  # (not needed for this calculation)
+
+    
+
+        # finally it is easy to calculate the slope element,
+        # using those coefficients:
+
+        return ( ( 3.0 * C1 * t* t ) + ( 2.0 * C2 * t ) + C3 )
+
+        # note that this routine works for both the x and y side;
+        # simply run this routine twice, once for x once for y
+        # note that there are sometimes said to be 8 (not 4) coefficients,
+        # these are simply the four for x and four for y,
+        # calculated as above in each case.
+ 
+    def bezierTangentXY(self, t, a, b, c, d):
+        C1 = (( d[0] - (3.0 * c[0]) + (3.0 * b[0]) - a[0] ), ( d[1] - (3.0 * c[1]) + (3.0 * b[1]) - a[1] ))
+        C2 = ( (3.0 * c[0]) - (6.0 * b[0]) + (3.0 * a[0]) , (3.0 * c[1]) - (6.0 * b[1]) + (3.0 * a[1]) )
+        C3 = ( (3.0 * b[0]) - (3.0 * a[0]) , (3.0 * b[1]) - (3.0 * a[1]) )
+        C4 = ( a[0] , a[1]);
+
+        return (( ( 3.0 * C1[0] * t[0]* t[0] ) + ( 2.0 * C2[0] * t[0] ) + C3[0] ), ( ( 3.0 * C1[1] * t[1]* t[1] ) + ( 2.0 * C2[1] * t[1] ) + C3[1] ));
+
+
     def drawDebugLine(self, layer, x1, y1, x2, y2, color):
         layer = self.svg.getElementById(layer)
 
