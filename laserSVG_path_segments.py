@@ -219,9 +219,10 @@ class LaserSVG(inkex.EffectExtension):
         # inkex.utils.debug(csp_abs[0])
         # csp = path.original_path
         # inkex.utils.debug(csp)
-        # for segment in csp.proxy_iterator():
-        #     for point in csp.control_points:
-        #         inkex.utils.debug("{} {}".format(segment, point))
+        # for segment in csp_abs.to_segments():
+        #     inkex.utils.debug(segment)
+            # for point in csp.control_points:
+            #     inkex.utils.debug("{} {}".format(segment, point))
         # Store away the original control points in absolute values, we need these to draw the selection lines
         cps = []
         for cp in path.original_path.proxy_iterator():
@@ -436,10 +437,9 @@ class LaserSVG(inkex.EffectExtension):
                 # the length is always the original length plus half the gap minus the cos/sin of the gaps angle times thickness
                 # in this case we need to take the factors from the tagges calculation and just add the new ones on top
 
-                # length_x = float(result_x.group('offset')) + (gap.dx/2)  if centerpiece.angle > 0 else float(result_x.group('offset')) - (gap.dx/2) 
-                # angle_x =  truncate(angle_x - (cos(centerpiece.angle)/2), 5) if centerpiece.angle > 0 else truncate(angle_x + (cos(centerpiece.angle)/2), 5)
-                length_x = float(result_x.group('offset')) + copysign(gap.dx/2, -centerpiece.angle)
-                angle_x =  truncate(angle_x - (cos(centerpiece.angle)/2), 5) if centerpiece.angle > 0 else truncate(angle_x + (cos(centerpiece.angle)/2), 5)
+                length_x = float(result_x.group('offset')) + copysign(gap.dx/2, float(result_x.group('offset')))
+                # inkex.utils.debug(f"Length_X debug offset:{float(result_x.group('offset'))} delta: {truncate(copysign(cos(centerpiece.angle)/2, float(result_x.group('offset'))),5)}")
+                angle_x = truncate(angle_x + copysign(cos(centerpiece.angle)/2, -float(result_x.group('offset'))), 5)
 
                 if angle_x == 0:
                     thickness_term_x = f"{length_x}"
@@ -454,7 +454,6 @@ class LaserSVG(inkex.EffectExtension):
                 thickness_term_y = args[1]
                 if "thickness" in args[1]:
                     result_y = re.search(regex, args[1], re.MULTILINE)
-                    # inkex.utils.debug(result_y.groupdict())
 
                     if result_y.group('factor'):
                         angle_y = float(result_y.group('factor'))
@@ -465,8 +464,8 @@ class LaserSVG(inkex.EffectExtension):
                         elif result_y.group('operator') == "+":
                             angle_y = +1.0
                     
-                    length_y = float(result_y.group('offset')) + (gap.dy/2) if centerpiece.angle > 0 else float(result_y.group('offset'))-(gap.dy/2)
-                    angle_y = truncate(angle_y +0.5*sin(alpha)/sin(beta), 5) if gap.angle < 0 else truncate(angle_y - 0.5*sin(alpha)/sin(beta), 5)
+                    length_y = float(result_y.group('offset')) + copysign(gap.dy/2, float(result_y.group('offset')))
+                    angle_y = truncate(angle_y + copysign(0.5*angle_a, -gap.angle), 5)
 
                     if angle_y == 0:
                         thickness_term_y = f"{length_y}"
@@ -483,16 +482,15 @@ class LaserSVG(inkex.EffectExtension):
             # inkex.utils.debug(centerpiece)
 
             # Change in Y-direction is cos(centerpiece.angle)* {thickness} *sin(alpha)/sin(beta) 
-            # change in X-direction is 
 
-            angle_x = truncate(-cos(centerpiece.angle)/2 , 5) if centerpiece.angle > 0 else truncate(cos(centerpiece.angle)/2 , 5)
-            angle_y = truncate(0.5*sin(alpha)/sin(beta), 5) if gap.angle < 0 else truncate(-0.5*sin(alpha)/sin(beta), 5)
-            length_x = float(args[0])+(gap.dx/2) if centerpiece.angle > 0 else float(args[0])-(gap.dx/2)
-            inkex.utils.debug(f"C angle {centerpiece.angle}, gap angle {gap.angle} {alpha} {beta} ")
-            inkex.utils.debug(f"Using {angle_x} and {angle_y} would result in {5*angle_x} {5*angle_y}")
+            angle_x = truncate(copysign(cos(centerpiece.angle)/2, -float(args[0])), 5)
+            angle_y = truncate(copysign(0.5*angle_a, -gap.angle), 5)
+
+            length_x = truncate(copysign(float(args[0]) + gap.dx/2, float(args[0])), 5)
+            inkex.utils.debug(f"Length calc {args[0]} {gap.dx/2} centerpiece angle {centerpiece.angle} gap angle {gap.angle} angle x {angle_x}")
 
             if len(args) > 1:
-                length_y = float(args[1])+(gap.dy/2) if centerpiece.angle > 0 else float(args[1])-(gap.dy/2)
+                length_y = truncate(copysign(float(args[1])+gap.dy/2, float(args[1])), 5) 
                 thickness_term_y = f"{length_y}" if angle_y == 0.0 else f"{{{length_y}+thickness}}" if angle_y == 1.0 else f"{{{length_y}-thickness}}" if angle_y == -1.0 else "{{{}{:+}*thickness}}".format(truncate(length_y, 5),truncate(angle_y, 5))
             else: 
                 thickness_term_y = ""
