@@ -327,32 +327,24 @@ class LaserSVG(inkex.EffectExtension):
         c = thickness/sin(beta)
         a = thickness*sin(alpha)/sin(beta)
 
-        # inkex.utils.debug(f"The triangle: a {a} alpha {alpha}({degrees(alpha)}) b {thickness} beta {beta}({degrees(beta)}) c {c} ")
-        # inkex.utils.debug(f"l {l.angle} {sin(l.angle)} {cos(l.angle)} \n r {r.angle} {sin(r.angle)} {cos(r.angle)}")
 
         delta = self.getCommandDelta(leg)
-        sign = "-" #'+' if sin(leg_line.angle) < 0 else '-'
-        calc = (f"{delta[0]}", f"{{{delta[1]+a/2}{sign}{(0.5/sin(beta))*sin(alpha)}*thickness}}")
+        
+        calc = (f"{delta[0]}", "{{{}{:+}*thickness}}".format(truncate(delta[1]+copysign(a/2, -gap.angle), 5),truncate(copysign(0.5/sin(beta)*sin(alpha),gap.angle), 5)))
+
+
         #TODO: missing sin and cos factors here toi make it generic
 
-        # inkex.utils.debug(f"Deltas: {delta}  \n Calculations {calc}, sin leg line {sin(leg_line.angle)}")
+        # inkex.utils.debug(f"Deltas: {delta}  \n Calculations {calc}, {a}, {gap.angle} leg line angle {leg_line.angle}")
         return calc
 
     def tagSegmentsInPath(self, path, segments):
         template = path.copy().original_path.to_relative()
-
         for index,command in enumerate(path.original_path.to_relative()):
             if index in segments:
                 template[index] = self.tagCommand(command, float(self.document.getroot().get("{}material-thickness".format(self.LASER))))
 
         path.set(inkex.addNS("template", self.LASER_PREFIX),template)
-
-
-
-        # sp = path.original_path.to_superpath()
-        # inkex.utils.debug(sp[0][2])
-        # for segment in path.original_path:
-        #     inkex.utils.debug(segment)
 
     # returns a command with tagged parameters including a calculation
     def tagCommandWithCalculation(self, command, calculation):
