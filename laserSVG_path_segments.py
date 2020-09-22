@@ -269,7 +269,8 @@ class LaserSVG(inkex.EffectExtension):
                     (tx,ty) = self.bezierTangentXY((1, 1), cps[index-2], (curveCommand.x2, curveCommand.y2), (curveCommand.x3, curveCommand.y3), (curveCommand.x3, curveCommand.y3))
                     ll_angle = atan2(tx, tx)
                 else: 
-                    ll_angle = ll.angle
+                    if ll is not None:
+                        ll_angle = ll.angle
 
 
                 if (template[index+2].letter) == 'c':
@@ -278,7 +279,8 @@ class LaserSVG(inkex.EffectExtension):
                     (tx,ty) = self.bezierTangentXY((0, 0), cps[index+2], (curveCommand.x2, curveCommand.y2), (curveCommand.x3, curveCommand.y3), (curveCommand.x3, curveCommand.y3))
                     rr_angle = atan2(tx, tx)
                 else: 
-                    rr_angle = rr.angle
+                    if rr is not None:
+                        rr_angle = rr.angle
 
 
                 # If the segment leading to or from the slit is parallel to the slit base, we do not need to adjust the length of the slit walls
