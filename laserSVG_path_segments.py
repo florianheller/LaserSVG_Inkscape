@@ -232,18 +232,20 @@ class LaserSVG(inkex.EffectExtension):
                 # if index > 1:
                     # i = command.control_points(csp[index], csp[index-1], csp[index-2])
                     # inkex.utils.debug(cps[index])
-                ll, l, center, r, rr = None, None, None, None, None
-                if index >=2:
+                ll, l, center, r, rr, gap = None, None, None, None, None, None
+                if index >=2 and template[index-2].letter != 'm': #It doesn't make sense to consider the initial move command
                     ll = inkex.transforms.DirectedLineSegment(cps[index-2],cps[index-1])
                 if index >=1:
                     l = inkex.transforms.DirectedLineSegment(cps[index-1],cps[index])
-                center = inkex.transforms.DirectedLineSegment(cps[index], cps[index+1])
+                if index < len(cps)-1:
+                    center = inkex.transforms.DirectedLineSegment(cps[index], cps[index+1])
                 if index < len(cps)-2:
                     r = inkex.transforms.DirectedLineSegment(cps[index+1], cps[index+2])
                 if index < len(cps)-3:
                     rr = inkex.transforms.DirectedLineSegment(cps[index+2],cps[index+3])                
 
-                gap = inkex.transforms.DirectedLineSegment(cps[index-1],cps[index+2])
+                if index > 0 and index < len(cps)-2:
+                    gap = inkex.transforms.DirectedLineSegment(cps[index-1],cps[index+2])
 
                 # self.drawDebugLine("layer1", gap.x0, gap.y0, gap.x1, gap.y1, "green")
 
