@@ -45,8 +45,6 @@ class LaserSVG(inkex.EffectExtension):
         etree.register_namespace("laser", self.LASER_NAMESPACE)
         inkex.utils.NSS["laser"] = self.LASER_NAMESPACE
 
-        # inkex.utils.debug(self.options)
-
         # If nothing is selected, we can't do anything
         if not self.svg.selected:
             raise inkex.AbortExtension("Please select an object.")
