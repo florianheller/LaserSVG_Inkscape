@@ -387,16 +387,25 @@ class LaserSVG(inkex.EffectExtension):
         # for t it's 0 and 1
         # for a it's 5 and 6
 
+        # if the slit base and ll and rr are parallel, we don't need to do all the calculations
+        if abs(centerpiece.angle - gap.angle) < 0.01:
+            inkex.utils.debug(f"Base {centerpiece.angle} and gap {gap.angle} are parallel ")
+            angle_a = sin(gap.angle)
 
-        # First we need to transform gap.angle into an inner angle if it is not already the case
-        alpha = pi+gap.angle if gap.angle < -pi/2 else gap.angle - pi if gap.angle > pi/2 else gap.angle
-        # test_alpha = pi+rtest if rtest < -pi/2 else pi - rtest if rtest > pi/2 else rtest
-        beta = pi/2-alpha
-        beta = beta-pi if beta > pi/2 else beta+pi if beta < -pi/2 else beta
-        # a/sin(alpha) = b/sin(beta) = c/sin(gamma)
-        # b is thickness, and gamma is π/2 
-        c = thickness/sin(beta)
-        a = thickness*sin(alpha)/sin(beta)
+        else: 
+            # First we need to transform gap.angle into an inner angle if it is not already the case
+            alpha = pi+gap.angle if gap.angle < -pi/2 else gap.angle - pi if gap.angle > pi/2 else gap.angle
+            # test_alpha = pi+rtest if rtest < -pi/2 else pi - rtest if rtest > pi/2 else rtest
+            beta = pi/2-alpha
+            beta = beta-pi if beta > pi/2 else beta+pi if beta < -pi/2 else beta
+
+            inkex.utils.debug(f"The triangle: Alpha: {alpha}  Beta: {beta}, gap.angle {gap.angle} base angle {centerpiece.angle}")
+
+            # a/sin(alpha) = b/sin(beta) = c/sin(gamma)
+            # b is thickness, and gamma is π/2 
+            c = thickness/sin(beta)
+            a = thickness*sin(alpha)/sin(beta) 
+            angle_a = sin(alpha)/sin(beta)
 
         inkex.utils.debug(command)
 
