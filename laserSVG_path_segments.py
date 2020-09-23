@@ -325,19 +325,32 @@ class LaserSVG(inkex.EffectExtension):
 
         # a/sin(alpha) = b/sin(beta) = c/sin(gamma)
         # b is thickness, and gamma is π/2 
-        c = thickness/sin(beta)
+        #c = thickness/sin(beta)
         a = thickness*sin(alpha)/sin(beta)
 
 
-        delta = self.getCommandDelta(leg)
+        leg_delta = self.getCommandDelta(leg)
+
+
+        # TODO: if something is 0, it shouldn't be in the template
+        # inkex.utils.debug(f"{leg}")
+        # inkex.utils.debug(f"Debugging legs: leg angle {leg_line.angle}, gap angle {gap.angle} \n cos leg line {cos(leg_line.angle)} sin leg line {sin(leg_line.angle)}")
+        # inkex.utils.debug(f"{copysign(1,leg_delta[0])} {copysign(1,leg_delta[1])} {copysign(1,leg_line.angle)} {copysign(1,gap.angle)} {copysign(1,cos(leg_line.angle))} {copysign(1,sin(leg_line.angle))}")
         
-        calc = (f"{delta[0]}", "{{{}{:+}*thickness}}".format(truncate(delta[1]+copysign(a/2, -gap.angle), 5),truncate(copysign(0.5/sin(beta)*sin(alpha),gap.angle), 5)))
 
+        delta_x = truncate(0.5 * sin(alpha) * cos(leg_line.angle) /sin(beta), 5)
+        delta_y = truncate(0.5 * sin(alpha) * sin(leg_line.angle) /sin(beta), 5)
 
-        #TODO: missing sin and cos factors here toi make it generic
+        if delta_x == 0:
+            calc_x = f"{leg_delta[0] + truncate(copysign(a/2*cos(leg_line.angle),-gap.angle), 5)}"
+        else:
+            calc_x = "{{{}{:+}*thickness}}".format(truncate(leg_delta[0] + copysign(a/2*cos(leg_line.angle),-gap.angle), 5), copysign(delta_x, gap.angle))
+        if delta_y == 0:
+            calc_y = f"{leg_delta[1] + truncate(copysign(a/2*sin(leg_line.angle),-gap.angle), 5)}"
+        else:
+            calc_y = "{{{}{:+}*thickness}}".format(truncate(leg_delta[1] + copysign(a/2*sin(leg_line.angle),-gap.angle), 5),   copysign(delta_y, gap.angle))
 
-        # inkex.utils.debug(f"Deltas: {delta}  \n Calculations {calc}, {a}, {gap.angle} leg line angle {leg_line.angle}")
-        return calc
+        return (calc_x, calc_y)
 
     def tagSegmentsInPath(self, path, segments):
         template = path.copy().original_path.to_relative()
@@ -390,23 +403,40 @@ class LaserSVG(inkex.EffectExtension):
 
         # if the slit base and ll and rr are parallel, we don't need to do all the calculations
         if abs(centerpiece.angle - gap.angle) < 0.01:
-            inkex.utils.debug(f"Base {centerpiece.angle} and gap {gap.angle} are parallel ")
+            # inkex.utils.debug(f"Base {centerpiece.angle} and gap {gap.angle} are parallel ")
             angle_a = sin(gap.angle)
 
         else: 
             # First we need to transform gap.angle into an inner angle if it is not already the case
-            alpha = pi+gap.angle if gap.angle < -pi/2 else gap.angle - pi if gap.angle > pi/2 else gap.angle
+            # For that, we also need to consider the centerpiece angle, as alpha is their difference
+
+            # alpha, beta, gamma are the inner angles of the triangle formed by the gap and a line closing the gap parallel to the slit base
+            # we assume that slit base and walls are perpendicular, meaning that gamma = 90°
+
+
+
+            c_angle = pi + centerpiece.angle if centerpiece.angle < -pi/2 else pi - centerpiece.angle if centerpiece.angle > pi/2 else centerpiece.angle
+            g_angle = pi + gap.angle if gap.angle < -pi/2 else pi - gap.angle if gap.angle > pi/2 else gap.angle
+
+            alpha = abs(c_angle - g_angle)
+
+            #alpha = pi+gap.angle if gap.angle < -pi/2 else gap.angle - pi if gap.angle > pi/2 else gap.angle
             # test_alpha = pi+rtest if rtest < -pi/2 else pi - rtest if rtest > pi/2 else rtest
             beta = pi/2-alpha
             beta = beta-pi if beta > pi/2 else beta+pi if beta < -pi/2 else beta
 
-            inkex.utils.debug(f"The triangle: Alpha: {alpha}  Beta: {beta}, gap.angle {gap.angle} base angle {centerpiece.angle}")
+            # inkex.utils.debug(f"The triangle: Alpha: {degrees(alpha)}  Beta: {degrees(beta)}, gap.angle {degrees(gap.angle)} base angle {degrees(centerpiece.angle)}")
 
             # a/sin(alpha) = b/sin(beta) = c/sin(gamma)
             # b is thickness, and gamma is π/2 
             c = thickness/sin(beta)
             a = thickness*sin(alpha)/sin(beta) 
+
             angle_a = sin(alpha)/sin(beta)
+            angle_c = 1/sin(beta)
+
+            angle_factor_x = 0.5 * cos(gap.angle)/sin(beta)
+            angle_factor_y = 0.5 * sin(gap.angle)/sin(beta)
 
         inkex.utils.debug(command)
 
@@ -439,7 +469,7 @@ class LaserSVG(inkex.EffectExtension):
 
                 length_x = float(result_x.group('offset')) + copysign(gap.dx/2, float(result_x.group('offset')))
                 # inkex.utils.debug(f"Length_X debug offset:{float(result_x.group('offset'))} delta: {truncate(copysign(cos(centerpiece.angle)/2, float(result_x.group('offset'))),5)}")
-                angle_x = truncate(angle_x + copysign(cos(centerpiece.angle)/2, -float(result_x.group('offset'))), 5)
+                angle_x = angle_x + copysign(angle_factor_x, -float(result_x.group('offset')))
 
                 if angle_x == 0:
                     thickness_term_x = f"{length_x}"
@@ -465,7 +495,7 @@ class LaserSVG(inkex.EffectExtension):
                             angle_y = +1.0
                     
                     length_y = float(result_y.group('offset')) + copysign(gap.dy/2, float(result_y.group('offset')))
-                    angle_y = truncate(angle_y + copysign(0.5*angle_a, -gap.angle), 5)
+                    angle_y = angle_y + copysign(angle_factor_y, -gap.angle)
 
                     if angle_y == 0:
                         thickness_term_y = f"{length_y}"
@@ -483,21 +513,21 @@ class LaserSVG(inkex.EffectExtension):
 
             # Change in Y-direction is cos(centerpiece.angle)* {thickness} *sin(alpha)/sin(beta) 
 
-            angle_x = truncate(copysign(cos(centerpiece.angle)/2, -float(args[0])), 5)
-            angle_y = truncate(copysign(0.5*angle_a, -gap.angle), 5)
+            angle_x = copysign(angle_factor_x, -float(args[0]))
+            angle_y = copysign(angle_factor_y, -gap.angle)
 
-            length_x = truncate(copysign(float(args[0]) + gap.dx/2, float(args[0])), 5)
-            inkex.utils.debug(f"Length calc {args[0]} {gap.dx/2} centerpiece angle {centerpiece.angle} gap angle {gap.angle} angle x {angle_x}")
+            length_x = copysign(float(args[0]) + gap.dx/2, float(args[0]))
+            # inkex.utils.debug(f"Length calc {args[0]} {gap.dx/2} centerpiece angle {centerpiece.angle} gap angle {gap.angle} angle x {angle_x}")
 
             if len(args) > 1:
-                length_y = truncate(copysign(float(args[1])+gap.dy/2, float(args[1])), 5) 
+                length_y = copysign(float(args[1])+gap.dy/2, float(args[1]))
                 thickness_term_y = f"{length_y}" if angle_y == 0.0 else f"{{{length_y}+thickness}}" if angle_y == 1.0 else f"{{{length_y}-thickness}}" if angle_y == -1.0 else "{{{}{:+}*thickness}}".format(truncate(length_y, 5),truncate(angle_y, 5))
             else: 
                 thickness_term_y = ""
 
             thickness_term_x = f"{length_x}" if angle_x == 0.0 else f"{{{length_x}+thickness}}" if angle_x == 1.0 else f"{{{length_x}-thickness}}" if angle_x == -1.0 else "{{{}{:+}*thickness}}".format(truncate(length_x, 5),truncate(angle_x, 5))
             calculation = (thickness_term_x, thickness_term_y)
-            inkex.utils.debug(f"Segment is fresh {calculation}")
+            # inkex.utils.debug(f"Segment is fresh {calculation}")
         return calculation
 
     # returns a command with tagged parameters
