@@ -319,7 +319,11 @@ class LaserSVG(inkex.EffectExtension):
         # and one is fixed to 90, the last angle (opposite of alpha) is then 90-alpha
 
         # First we need to transform gap.angle into an inner angle if it is not already the case
-        alpha = pi+gap.angle if gap.angle < -pi/2 else gap.angle - pi if gap.angle > pi/2 else gap.angle
+        c_angle = pi + centerpiece.angle if centerpiece.angle < -pi/2 else pi - centerpiece.angle if centerpiece.angle > pi/2 else centerpiece.angle
+        g_angle = pi + gap.angle if gap.angle < -pi/2 else pi - gap.angle if gap.angle > pi/2 else gap.angle
+
+        alpha = abs(c_angle - g_angle)
+
         beta = pi/2-alpha
         beta = beta-pi if beta > pi/2 else beta+pi if beta < -pi/2 else beta
 
