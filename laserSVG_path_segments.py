@@ -286,11 +286,11 @@ class LaserSVG(inkex.EffectExtension):
 
                 # If the segment leading to or from the slit is parallel to the slit base, we do not need to adjust the length of the slit walls
                 if (ll != None and (abs(ll_angle - center.angle)) > 0.0001) or self.options.assume_parallel == "false":
-                    calc_l = self.shortenSlitLeg(thickness, gap, template[index], template[index-1], l)
+                    calc_l = self.shortenSlitLeg(template[index-1], gap, center, thickness, l)
                     template[index-1] = self.tagCommandWithCalculation(template[index-1],calc_l)
 
                 if (rr != None and (abs(rr.angle - center.angle)) > 0.0001) or self.options.assume_parallel == "false" :
-                    calc_r = self.shortenSlitLeg(thickness, gap, template[index], template[index+1], r)
+                    calc_r = self.shortenSlitLeg(template[index+1], gap, center, thickness, r)
                     template[index+1] = self.tagCommandWithCalculation(template[index+1],calc_r)
 
                 
@@ -313,7 +313,7 @@ class LaserSVG(inkex.EffectExtension):
                 #segments-2 and +2 need to be shortened by 0.5*thickness to keep the slit centered
                 #segments-1 and +1 need to be adjusted such that they match
 
-    def shortenSlitLeg(self, thickness, gap, base, leg, leg_line):
+    def shortenSlitLeg(self, leg, gap, centerpiece, thickness, leg_line):
         # We assume that the base and it's adjacent walls are orthogonal to each-other (90°)
         # This allows us to use the sinus-calulations in a triangle, as the sum of all inner angles in a triangle is 180, 
         # and one is fixed to 90, the last angle (opposite of alpha) is then 90-alpha
