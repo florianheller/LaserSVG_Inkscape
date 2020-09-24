@@ -332,10 +332,6 @@ class LaserSVG(inkex.EffectExtension):
         #c = thickness/sin(beta)
         a = thickness*sin(alpha)/sin(beta)
 
-
-        leg_delta = self.getCommandDelta(leg)
-
-
         # TODO: if something is 0, it shouldn't be in the template
         # inkex.utils.debug(f"{leg}")
         # inkex.utils.debug(f"Debugging legs: leg angle {leg_line.angle}, gap angle {gap.angle} \n cos leg line {cos(leg_line.angle)} sin leg line {sin(leg_line.angle)}")
@@ -346,13 +342,15 @@ class LaserSVG(inkex.EffectExtension):
         delta_y = truncate(0.5 * sin(alpha) * sin(leg_line.angle) /sin(beta), 5)
 
         if delta_x == 0:
-            calc_x = f"{leg_delta[0] + truncate(copysign(a/2*cos(leg_line.angle),-gap.angle), 5)}"
+            # If delta is 0, shouldn't that only be leg_line_x? Alpha would be 0 a.k.a. base and gap are parallel. 
+            # meaning that there is no change in length depending on thickness.
+            calc_x = f"{leg_line.dx + truncate(copysign(gap.dx/2*cos(leg_line.angle),-gap.angle), 5)}"
         else:
-            calc_x = "{{{}{:+}*thickness}}".format(truncate(leg_delta[0] + copysign(a/2*cos(leg_line.angle),-gap.angle), 5), copysign(delta_x, gap.angle))
+            calc_x = "{{{}{:+}*thickness}}".format(truncate(leg_line.dx + copysign((gap.dx/2)*cos(leg_line.angle),-gap.angle), 5), copysign(delta_x, gap.angle))
         if delta_y == 0:
-            calc_y = f"{leg_delta[1] + truncate(copysign(a/2*sin(leg_line.angle),-gap.angle), 5)}"
+            calc_y = f"{leg_line.dy + truncate(copysign(gap.dy/2*sin(leg_line.angle),-gap.angle), 5)}"
         else:
-            calc_y = "{{{}{:+}*thickness}}".format(truncate(leg_delta[1] + copysign(a/2*sin(leg_line.angle),-gap.angle), 5),   copysign(delta_y, gap.angle))
+            calc_y = "{{{}{:+}*thickness}}".format(truncate(leg_line.dy + copysign((gap.dy/2)*sin(leg_line.angle),-gap.angle), 5), copysign(delta_y, gap.angle))
 
         return (calc_x, calc_y)
 
