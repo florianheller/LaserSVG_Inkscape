@@ -333,46 +333,26 @@ class LaserSVG(inkex.EffectExtension):
         a = thickness*sin(alpha)/sin(beta)
 
         # In the case of a triangle with beta = pi/2, the x and y components of c/2 are actually the same as for a/2 and b/2
-        # We know b=thickness
-
-        # inkex.utils.debug(f"{leg}")
-        # inkex.utils.debug(f"Debugging legs: leg angle {leg_line.angle}, gap angle {gap.angle} \n cos leg line {cos(leg_line.angle)} sin leg line {sin(leg_line.angle)}")
-        
-        # inkex.utils.debug(f"The triangle alpha: {degrees(alpha)} beta: {degrees(beta)} a: {a} c: {c}")
-        # inkex.utils.debug(f"{(c/2)*cos(gap.angle)} vs {gap.dx/2} \n {(c/2)*sin(gap.angle)} vs {gap.dy/2}")
-        # inkex.utils.debug(f"Gap: {gap} \n Gap half? {gap.dx/2} {gap.dy/2}, gap angle {gap.angle}")
-        # inkex.utils.debug(f"A: {a} a.dx {a * cos(leg_line.angle)} a.dy {a * sin(leg_line.angle)}")
-        # inkex.utils.debug(f"\nLeg: {leg}, angle: {degrees(leg_line.angle)} \n leg line: {leg_line} line.dx {leg_line.dx} line.dy {leg_line.dy}\n")
-        # inkex.utils.debug(f"{0.5 * a * cos(-leg_line.angle)} {0.5 * a * sin(-leg_line.angle)}")
-        # inkex.utils.debug(f"({leg_line.x0} {leg_line.y0}) -> ({leg_line.x1} {leg_line.y1})")
-        # inkex.utils.debug(f"{leg} {leg_line}")
 
         # Projection of a (calculated in a right triangle) into the global coordinate system
         delta_x = truncate((0.5 * sin(alpha) / sin(beta)) * cos(leg_line.angle), 5) 
         delta_y = truncate((0.5 * sin(alpha)  / sin(beta)) * sin(leg_line.angle), 5)
 
-        # inkex.utils.debug(f"Delta: {delta_x} {delta_y}")
-        # For each component we need to consider both the (x,y) components of a
-
         start_x = truncate(leg_line.dx + (delta_x * thickness) * copysign(1, -(leg_line.angle*gap.angle)) , 5)
         start_y = truncate(leg_line.dy + (delta_y * thickness) * copysign(1, -(leg_line.angle*gap.angle)) , 5)
-
- 
-        # inkex.utils.debug(f"Start: ({leg_line.dx}, {leg_line.dy}) -> ({start_x}, {start_y})")
-
-        # inkex.utils.debug(f"{copysign(1,leg_line.dx)} {copysign(1,leg_line.dy)} {copysign(1,leg_line.angle)} {copysign(1,cos(leg_line.angle))} {copysign(1,sin(leg_line.angle))} {copysign(1,gap.angle)} {copysign(1,cos(gap.angle))} {copysign(1,sin(gap.angle))}  {copysign(1,delta_x)} {copysign(1,delta_y)}")
 
         if delta_x == 0:
             # If delta is 0, shouldn't that only be leg_line_x? Alpha would be 0 a.k.a. base and gap are parallel. 
             # meaning that there is no change in length depending on thickness.
-            calc_x = start_x #f"{leg_line.dx + truncate(copysign(gap.dx/2*cos(leg_line.angle),-gap.angle), 5)}"
+            calc_x = start_x 
         else:
             calc_x = "{{{}{:+}*thickness}}".format(start_x, copysign(delta_x, -cos(gap.angle)))
+
         if delta_y == 0:
-            calc_y = start_y #f"{leg_line.dy + truncate(copysign(gap.dy/2*sin(leg_line.angle),-gap.angle), 5)}"
+            calc_y = start_y 
         else:
             calc_y = "{{{}{:+}*thickness}}".format(start_y, copysign(delta_y, gap.angle))
-        # inkex.utils.debug(f"calculations {calc_x} {calc_y}")
+            
         return (calc_x, calc_y)
 
     def tagSegmentsInPath(self, path, segments):
