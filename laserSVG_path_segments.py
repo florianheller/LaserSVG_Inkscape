@@ -69,11 +69,11 @@ class LaserSVG(inkex.EffectExtension):
                     # p2 = path.original_path.to_superpath()
                     # inkex.utils.debug('{0}'.format(p2))
                     for element in selected: 
-                        inkex.utils.debug( '{0} - selected nodes of subpath {1}: {2}'.format(pathID, element, selected[element]))
+                        # inkex.utils.debug( '{0} - selected nodes of subpath {1}: {2}'.format(pathID, element, selected[element]))
                         # show the coordinates
                         for nodes in selected[element]:
                             coordinates = path.original_path.to_superpath()[element][nodes][1]
-                            inkex.utils.debug('{0} - selected node {1}: {2}'.format(pathID, nodes, coordinates))
+                            # inkex.utils.debug('{0} - selected node {1}: {2}'.format(pathID, nodes, coordinates))
                         # Check if path segment length matches specified thickness
                         # check if a path template is already defined, if not, create one
                         # place the {thickness} label at the repective place in the path template
@@ -437,8 +437,6 @@ class LaserSVG(inkex.EffectExtension):
 
             angle_factor_x = 0.5 * cos(gap.angle)/sin(beta)
             angle_factor_y = 0.5 * sin(gap.angle)/sin(beta)
-
-        inkex.utils.debug(command)
 
         # Check whether that segment has already been tagged 
         if  "thickness" in str(command):
