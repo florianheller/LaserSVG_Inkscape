@@ -286,12 +286,9 @@ class LaserSVG(inkex.EffectExtension):
 
                 # If the segment leading to or from the slit is parallel to the slit base, we do not need to adjust the length of the slit walls
                 if (ll != None and (abs(ll_angle - center.angle)) > 0.0001) or self.options.assume_parallel == "false":
-                    calc_l = self.shortenSlitLeg(template[index-1], gap, center, thickness, l)
-                    template[index-1] = self.tagCommandWithCalculation(template[index-1],calc_l)
-
-                if (rr != None and (abs(rr.angle - center.angle)) > 0.0001) or self.options.assume_parallel == "false" :
-                    calc_r = self.shortenSlitLeg(template[index+1], gap, center, thickness, r)
-                    template[index+1] = self.tagCommandWithCalculation(template[index+1],calc_r)
+                    template[index-1] = self.tagCommandWithCalculation(template[index-1],self.shortenSlitLeg(template[index-1], gap, center, thickness, l))
+                if (rr != None and (abs(rr.angle - center.angle)) > 0.0001) or self.options.assume_parallel == "false":
+                    template[index+1] = self.tagCommandWithCalculation(template[index+1],self.shortenSlitLeg(template[index+1], gap, center, thickness, r))
 
                 
 
@@ -352,7 +349,7 @@ class LaserSVG(inkex.EffectExtension):
             calc_y = start_y 
         else:
             calc_y = "{{{}{:+}*thickness}}".format(start_y, copysign(delta_y, gap.angle))
-            
+
         return (calc_x, calc_y)
 
     def tagSegmentsInPath(self, path, segments):
