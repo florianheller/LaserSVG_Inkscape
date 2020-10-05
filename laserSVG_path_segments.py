@@ -264,37 +264,37 @@ class LaserSVG(inkex.EffectExtension):
 
                 # self.drawDebugLine("layer1" , centerpoint[0], centerpoint[1], centerpoint[0]+((5/2)*cos(c.angle)), centerpoint[1]+((5/2)*sin(c.angle)), "red")
 
-                if (template[index-2].letter) == 'c':
-                    # Calculate a point at the end of the curve
-                    curveCommand = list(csp_abs.to_segments())[index-2]
-                    (tx,ty) = self.bezierTangentXY((1, 1), cps[index-2], (curveCommand.x2, curveCommand.y2), (curveCommand.x3, curveCommand.y3), (curveCommand.x3, curveCommand.y3))
-                    ll_angle = atan2(tx, tx)
-                else: 
-                    if ll is not None:
+                if ll is not None:
+                    if (template[index-2].letter) == 'c':
+                        # Calculate a point at the end of the curve
+                        curveCommand = list(csp_abs.to_segments())[index-2]
+                        (tx,ty) = self.bezierTangentXY((1, 1), cps[index-2], (curveCommand.x2, curveCommand.y2), (curveCommand.x3, curveCommand.y3), (curveCommand.x3, curveCommand.y3))
+                        ll_angle = atan2(tx, tx)
+                    else: 
                         ll_angle = ll.angle
 
 
-                if (template[index+2].letter) == 'c':
-                    # Calculate a point at the beginning of the curve
-                    curveCommand = list(csp_abs.to_segments())[index+2]
-                    (tx,ty) = self.bezierTangentXY((0, 0), cps[index+2], (curveCommand.x2, curveCommand.y2), (curveCommand.x3, curveCommand.y3), (curveCommand.x3, curveCommand.y3))
-                    rr_angle = atan2(tx, tx)
-                else: 
-                    if rr is not None:
+                if rr is not None:
+                    if (template[index+2].letter) == 'c':
+                        # Calculate a point at the beginning of the curve
+                        curveCommand = list(csp_abs.to_segments())[index+2]
+                        (tx,ty) = self.bezierTangentXY((0, 0), cps[index+2], (curveCommand.x2, curveCommand.y2), (curveCommand.x3, curveCommand.y3), (curveCommand.x3, curveCommand.y3))
+                        rr_angle = atan2(tx, tx)
+                    else: 
                         rr_angle = rr.angle
 
 
                 # If the segment leading to or from the slit is parallel to the slit base, we do not need to adjust the length of the slit walls
-                if (ll != None and (abs(ll_angle - center.angle)) > 0.0001) or self.options.assume_parallel == "false":
+                if (ll != None and gap != None and (abs(ll_angle - center.angle)) > 0.0001) or self.options.assume_parallel == "false":
                     template[index-1] = self.tagCommandWithCalculation(template[index-1],self.shortenSlitLeg(template[index-1], gap, center, thickness, l))
                 if (rr != None and (abs(rr.angle - center.angle)) > 0.0001) or self.options.assume_parallel == "false":
                     template[index+1] = self.tagCommandWithCalculation(template[index+1],self.shortenSlitLeg(template[index+1], gap, center, thickness, r))
 
                 
 
-                if index >=2:
+                if index >=2 and gap is not None:
                     template[index-2] = self.tagCommandWithCalculation(template[index-2], self.tagSlitSegment(template[index-2],gap, center, thickness))
-                if index < len(cps)-2:
+                if index < len(cps)-2 and gap is not None:
                     template[index+2] = self.tagCommandWithCalculation(template[index+2], self.tagSlitSegment(template[index+2],gap, center, thickness))
                 # self.drawDebugLine("layer1", gap_center[0], gap_center[1], gap_center[0]+((5/2)*cos(gap.angle)),gap_center[1]+((5/2)*sin(c.angle)), "limegreen")
                 
