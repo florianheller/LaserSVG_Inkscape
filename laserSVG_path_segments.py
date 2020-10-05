@@ -96,11 +96,13 @@ class LaserSVG(inkex.EffectExtension):
                     else:
                         raise inkex.AbortExtension("Please highlight the slits first using the selection layer")
 
-
+    # These are subclasses that can handle non-numeric elements (e.g., {thickness}) in their arguments
+    # For that, we create a template class with an appropriate toString method, and then just subclass both
+    # to achieve the wanted behavior
     class template(object):
         def __str__(self):
             return self.letter + " " + ", ".join(map(str, self.args))
-    class horzTemplate(template,inkex.paths.horz):
+    class horzTemplate(template, inkex.paths.horz):
         pass
     class vertTemplate(template, inkex.paths.vert):
         pass
@@ -111,6 +113,7 @@ class LaserSVG(inkex.EffectExtension):
     class curveTemplate(template, inkex.paths.curve):
         pass
 
+    # This method goes through all segments of a path and replaces those that are of length _length_ with a {thickness} label
     def tagSegments(self, path, length):
 
         template = inkex.paths.Path()
@@ -157,6 +160,8 @@ class LaserSVG(inkex.EffectExtension):
             commandLength = self.getCommandLength(command)
             if commandLength is not None:
                 if abs(commandLength-length) < 0.1:
+                    if index < 2:
+                        inkex.utils.debug(f"Warning: {command} it the {index} segment of the path {path}, which could be problematic.")
                 # Now get the coordinates to draw a line from the absolute mode path
                     line = etree.SubElement(layer, "line")
                     if index > 1:
@@ -204,7 +209,7 @@ class LaserSVG(inkex.EffectExtension):
             elif mode == "slits":
                 self.tagSlitsInPath(self.svg.getElementById(element), segments)
 
-    # The tagging of a slit is a bit more complicatedas we need to adapt the two segments to the left and right respectively.
+    # The tagging of a slit is a bit more complicated as we need to adapt the two segments to the left and right respectively.
     # First, we tag the slit base as being of material thickness
     # Second, we calculate a line between the start point of the left slit wall and the end-point of the right slit wall. 
     # This gives us a line that closes the slit, which we will use as an approximation of the slope of the cutout. 
