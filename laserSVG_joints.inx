@@ -5,7 +5,7 @@
     <param name="tab" type="notebook">
         <page name="rectangles" gui-text="Rectangles">
             <hbox>
-                <image>joint_left.svg</image>
+                <image>images/joint_left.svg</image>
                 <param type="optiongroup" name="joint_left" gui-text="" appearance="combo">
                     <item value="">None</item>
                     <item value="finger">Finger</item>
@@ -19,7 +19,7 @@
                 </param>
             </hbox>
             <hbox>
-                <image>joint_top.svg</image>
+                <image>images/joint_top.svg</image>
                 <param type="optiongroup" name="joint_top" gui-text="" appearance="combo">
                     <item value="">None</item>
                     <item value="finger">Finger</item>
@@ -33,7 +33,7 @@
                 </param>
             </hbox>
             <hbox>
-                <image>joint_right.svg</image>
+                <image>images/joint_right.svg</image>
                 <param type="optiongroup" name="joint_right" gui-text="" appearance="combo">
                     <item value="">None</item>
                     <item value="finger">Finger</item>
@@ -47,7 +47,7 @@
                 </param>
             </hbox>
             <hbox>
-                <image>joint_bottom.svg</image>
+                <image>images/joint_bottom.svg</image>
                 <param type="optiongroup" name="joint_bottom" gui-text="" appearance="combo">
                     <item value="">None</item>
                     <item value="finger">Finger</item>

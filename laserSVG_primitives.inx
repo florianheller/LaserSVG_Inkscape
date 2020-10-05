@@ -15,10 +15,10 @@
                             <item value="both">Both</item>
                         </param>
                         <vbox>
-                            <image>resize_none.svg</image>
-                            <image>resize_width.svg</image>
-                            <image>resize_height.svg</image>
-                            <image>resize_both.svg</image>
+                            <image>images/resize_none.svg</image>
+                            <image>images/resize_width.svg</image>
+                            <image>images/resize_height.svg</image>
+                            <image>images/resize_both.svg</image>
                         </vbox>
                     </hbox>
                 </vbox>
@@ -34,11 +34,11 @@
                             <item value="center">Center</item>
                         </param>
                         <vbox>
-                            <image>resize_origin_tl.svg</image>
-                            <image>resize_origin_tr.svg</image>
-                            <image>resize_origin_bl.svg</image>
-                            <image>resize_origin_br.svg</image>
-                            <image>resize_origin_c.svg</image>
+                            <image>images/resize_origin_tl.svg</image>
+                            <image>images/resize_origin_tr.svg</image>
+                            <image>images/resize_origin_bl.svg</image>
+                            <image>images/resize_origin_br.svg</image>
+                            <image>images/resize_origin_c.svg</image>
                         </vbox>
                     </hbox>
                 </vbox>
@@ -52,9 +52,9 @@
                             <item value="shrink">Shrink</item>
                         </param>
                         <vbox>
-                            <image>resize_none.svg</image>
-                            <image>kerf_grow.svg</image>
-                            <image>kerf_shrink.svg</image>
+                            <image>images/resize_none.svg</image>
+                            <image>images/kerf_grow.svg</image>
+                            <image>images/kerf_shrink.svg</image>
                         </vbox>
                     </hbox>
                 </vbox>
