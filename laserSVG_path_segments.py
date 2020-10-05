@@ -564,7 +564,8 @@ class LaserSVG(inkex.EffectExtension):
             else: #if the length does not match
                 return command
         elif command.letter == 'c':
-            if  abs(self.getCommandLength(command)-thickness) < threshold:
+            length = self.getCommandLength(command) 
+            if  length is not None and abs(length-thickness) < threshold:
                 ratio_x = command.args[4] / thickness
                 term_x = "0" if ratio_x == 0 else "{thickness}" if ratio_x == 1 else "{-thickness}" if ratio_x == -1 else f"{{{ratio_x}*thickness}}"
                 ratio_y = command.args[5] / thickness
@@ -580,7 +581,10 @@ class LaserSVG(inkex.EffectExtension):
     # such that we don't have to handle all the different parameter locations
     def getCommandLength(self, command) -> float:
         dx,dy = self.getCommandDelta(command)
-        return sqrt(dx**2 + dy**2)
+        if dx is not None and dy is not None:
+            return sqrt(dx**2 + dy**2)
+        else:    
+            return None
         
     def getCommandDelta(self, command):
         if command.letter == 'l':
@@ -596,7 +600,7 @@ class LaserSVG(inkex.EffectExtension):
         elif command.letter == 'a':
             return (command.args[5], command.args[6])
         else:
-            return (0, 0)
+            return (None, None)
 
     # based on MBBezierView.m    original BY MICHAL stackoverflow #4058979
     def bezierInterpolation(self, t, a, b, c, d):
