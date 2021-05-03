@@ -23,7 +23,7 @@
 import inkex
 import re
 from lxml import etree
-from math import sqrt, atan2, pi, sin, cos, trunc, degrees, copysign
+from math import sqrt, atan2, pi, sin, cos, trunc, degrees, copysign, isclose
 
 class LaserSVG(inkex.EffectExtension):
 
@@ -32,19 +32,25 @@ class LaserSVG(inkex.EffectExtension):
     LASER_PREFIX = "laser"
     LASER = "{%s}" % LASER_NAMESPACE
 
+    threshold = 0.15
+
     def add_arguments(self, pars):
         pars.add_argument("--material_thickness", default=3, help="The material thickness")
         pars.add_argument("--selection_process_run", default=1, help="The step number of the two-step process")
         pars.add_argument("--slit_process_run", default=1, help="The step number of the two-step process")
         pars.add_argument("--kerf_direction", default=0, help="The direction in which the kerf-adjustments should be made.")
         pars.add_argument("--action", default="none", help="The default laser operation")
+        pars.add_argument("--subtract", default=False, help="Subtract thickness from segment")
         pars.add_argument("--assume_parallel", default=False, help="Assume segment and slit base to be parallel.")
+        pars.add_argument("--tolerance", default=0.15, help="Tolerance when handling measurements")
+        pars.add_argument("--round_thickness", default=False, help="Round elements close to thickness to the exact value.")
         pars.add_argument("--tab", help="The selected UI-tab when OK was pressed")
 
     def effect(self):
         etree.register_namespace("laser", self.LASER_NAMESPACE)
         inkex.utils.NSS["laser"] = self.LASER_NAMESPACE
 
+        self.threshold = float(self.options.tolerance)
         # If nothing is selected, we can't do anything
         if not self.svg.selected:
             raise inkex.AbortExtension("Please select an object.")
@@ -159,7 +165,7 @@ class LaserSVG(inkex.EffectExtension):
         for index,command in enumerate(path.original_path.to_relative()): #Easier in relative mode
             commandLength = self.getCommandLength(command)
             if commandLength is not None:
-                if abs(commandLength-length) < 0.1:
+                if abs(commandLength-length) < self.threshold:
                     if index < 2:
                         inkex.utils.debug(f"Warning: {command} it the {index} segment of the path {path}, which could be problematic.")
                 # Now get the coordinates to draw a line from the absolute mode path
@@ -406,10 +412,14 @@ class LaserSVG(inkex.EffectExtension):
         # for t it's 0 and 1
         # for a it's 5 and 6
 
+        # inkex.utils.debug(f"About to tag slit segment {command}")
         # if the slit base and ll and rr are parallel, we don't need to do all the calculations
         if abs(centerpiece.angle - gap.angle) < 0.01:
             # inkex.utils.debug(f"Base {centerpiece.angle} and gap {gap.angle} are parallel ")
             angle_a = sin(gap.angle)
+            angle_factor_x = 0.5 * cos(centerpiece.angle)
+            angle_factor_y = 0.5 * sin(centerpiece.angle)
+
 
         else: 
             # First we need to transform gap.angle into an inner angle if it is not already the case
@@ -535,15 +545,28 @@ class LaserSVG(inkex.EffectExtension):
 
     # returns a command with tagged parameters
     def tagCommand(self, command, thickness):
-        threshold = 0.1
+        threshold = self.threshold #Use the global threshold
+        round_tolerance = 0.05
+        zero_tolerance = 0.01
         if command.letter == 'l':
             x = command.args[0]
             y = command.args[1]
 
             # In non-orthogonal cases, there can be a minimal difference due to floating points
-            if abs((x*x + y*y) - (thickness*thickness)) < threshold:
+
+            if abs(sqrt(x*x + y*y) - thickness) < threshold:
                 factor_x = truncate(x/thickness, 5)
                 factor_y = truncate(y/thickness, 5)
+                if bool(self.options.round_thickness) == True:
+                    if isclose(factor_x,0, abs_tol=zero_tolerance): #remember this is a tolerance of 0.01 mm!  
+                        factor_x = 0
+                    if isclose(factor_y,0, abs_tol=zero_tolerance): 
+                        factor_y = 0
+                    if abs(factor_x) > (1-round_tolerance) and abs(factor_x) < (1+round_tolerance):
+                        factor_x = copysign(1, factor_x)
+                    if abs(factor_y) > (1-round_tolerance) and abs(factor_y) < (1+round_tolerance):
+                        factor_y = copysign(1, factor_y)
+
                 return self.lineTemplate("0" if factor_x == 0 else "{thickness}" if factor_x == 1 else "{-thickness}" if factor_x == -1 else "{{{}*thickness}}".format(factor_x),
                     "0" if factor_y == 0 else "{thickness}" if factor_y == 1 else "{-thickness}" if factor_y == -1 else "{{{}*thickness}}".format(factor_y))
             else:
@@ -551,8 +574,14 @@ class LaserSVG(inkex.EffectExtension):
         elif command.letter in ['v', 'h']:
             x = command.args[0]
 
-            if  abs(x*x - thickness*thickness) < threshold:
-                ratio = truncate(x / thickness, 3)
+            if  abs(abs(x) - thickness) < threshold:
+                ratio = truncate(x / thickness, 5)
+                if bool(self.options.round_thickness) == True:
+                    if isclose(ratio,0, abs_tol=zero_tolerance): 
+                        ratio = 0
+                    if abs(ratio) > (1-round_tolerance) and abs(ratio) < (1+round_tolerance):
+                        ratio = copysign(1, ratio)
+
                 pattern = ""
                 if ratio == 1:
                     pattern = "{thickness}"
@@ -572,8 +601,18 @@ class LaserSVG(inkex.EffectExtension):
             length = self.getCommandLength(command) 
             if  length is not None and abs(length-thickness) < threshold:
                 ratio_x = command.args[4] / thickness
+                if bool(self.options.round_thickness) == True:
+                    if isclose(ratio_x,0, abs_tol=zero_tolerance): 
+                        ratio_x = 0
+                    if abs(ratio_x) > (1-round_tolerance) and abs(ratio_x) < (1+round_tolerance):
+                        ratio_x = copysign(1, ratio_x)
                 term_x = "0" if ratio_x == 0 else "{thickness}" if ratio_x == 1 else "{-thickness}" if ratio_x == -1 else f"{{{ratio_x}*thickness}}"
                 ratio_y = command.args[5] / thickness
+                if bool(self.options.round_thickness) == True:
+                    if isclose(ratio_y,0, abs_tol=zero_tolerance): 
+                        ratio_y = 0
+                    if abs(ratio_y) > (1-round_tolerance) and abs(ratio_y) < (1+round_tolerance):
+                        ratio_y = copysign(1, ratio_y)
                 term_y = "0" if ratio_y == 0 else "{thickness}" if ratio_y == 1 else "{-thickness}" if ratio_y == -1 else f"{{{ratio_y}*thickness}}"
                 newCommand = self.curveTemplate(command.args[0], command.args[1], command.args[2], command.args[3], term_x, term_y)
             else:

@@ -4,13 +4,14 @@
     <id>org.inkscape.filter.lasersvg_path_segments</id>
     <param name="tab" type="notebook">
         <page name="tag_all" gui-text="Tag all">
-                <param name="desc1" type="description">This option turns all segments of the selected path that have the same length as the material thickness defined in the LaserSVG Control panel into parametric ones</param>
+                <param name="desc11" type="description">This option turns all segments of the selected path that have the same length as the material thickness defined in the LaserSVG Control panel into parametric ones</param>
         </page>
         <page name="tag_selected" gui-text="Tag selected">
-                <param name="desc1" type="description">This option turns the tags the segment between the two selected path nodes as being of material thickness.</param>
+                <param name="desc12" type="description">This option turns the tags the segment between the two selected path nodes as being of material thickness.</param>
+                <param type="bool" name="subtract" gui-text="Subtract length from segment">false</param>
         </page>
         <page name="tag_selection" gui-text="Tag selection">
-                <param name="desc1" type="description" xml:space="preserve">In this two-step process you can select which segments should be treated as being of material thickness or not. In the first step we will create a layer with all segments that have the same length as the material thickness as specified in the control panel. Delete all segments from that layer that should not be treated as being of material thickness. 
+                <param name="desc13" type="description" xml:space="preserve">In this two-step process you can select which segments should be treated as being of material thickness or not. In the first step we will create a layer with all segments that have the same length as the material thickness as specified in the control panel. Delete all segments from that layer that should not be treated as being of material thickness. 
 
 In a second pass, this information will be mapped onto the original paths and the selection layer will be removed.
 
@@ -21,7 +22,7 @@ In a second pass, this information will be mapped onto the original paths and th
                 </param>
         </page>
         <page name="tag_slots" gui-text="Tag slits">
-            <param name="desc2" type="description" xml:space="preserve">In this two-step process you can select which segments should be treated as being of material thickness or not. In contrast to the "Tag selection"-option, this algorithm looks only for slits and adjusts them such that they stay centered at their current location.
+            <param name="desc21" type="description" xml:space="preserve">In this two-step process you can select which segments should be treated as being of material thickness or not. In contrast to the "Tag selection"-option, this algorithm looks only for slits and adjusts them such that they stay centered at their current location.
 
 In the first step we will create a layer with all segments that form a slit of the same width as the material thickness as specified in the control panel. Delete all segments from that layer that should not be treated as being of material thickness. 
 
@@ -34,7 +35,7 @@ In a second pass, this information will be mapped onto the original paths and th
             </param>
         </page>
          <page name="kerf" gui-text="Kerf adjustment">
-                <param name="desc1" type="description">Here you can specify wether the selected path segments should grow or shrink when the kerf-width is adjusted. With certain materials, this setting ensures a tight fit.</param>
+                <param name="desc31" type="description">Here you can specify wether the selected path segments should grow or shrink when the kerf-width is adjusted. With certain materials, this setting ensures a tight fit.</param>
                 <param name="kerf_direction" type="optiongroup" gui-text="Kerf adjutment direction">
                     <option value="g">Grow</option>
                     <option value="s">Shrink</option>
@@ -42,8 +43,12 @@ In a second pass, this information will be mapped onto the original paths and th
 
         </page>
         <page name="settings" gui-text="Settings">
-            <param name="desc2" type="description">Some path segments might not have a length associated. This interferes with automatically adjusting the length for the slit walls. Leave this unchecked to adjust the length of slit walls adjacent to such segments anyway.</param>
+            <param name="desc41" type="description">Some path segments might not have a length associated. This interferes with automatically adjusting the length for the slit walls. Leave this unchecked to adjust the length of slit walls adjacent to such segments anyway.</param>
             <param type="bool" name="assume_parallel" gui-text="Assume slits parallel">false</param>
+            <param name="desc42" type="description">Sometimes the dimensions in drawings are not exact, with slight deviations from the thickness. Do you want to round everything that is close to the thickness dimension to the exact value?</param>
+            <param type="bool" name="round_thickness" gui-text="Round to thickness">true</param>
+            <param name="desc43" type="description">Some path segments might not have a length associated. This interferes with automatically adjusting the length for the slit walls. Leave this unchecked to adjust the length of slit walls adjacent to such segments anyway.</param>
+            <param name="tolerance" type="float" precision="2" min="0" max="5" gui-text="Tolerance">0.2</param>
         </page>
         <page name="help" gui-text="Help">
             <label xml:space="preserve">This extension adds {thickness} labels to the path template of a LaserSVG file. 
