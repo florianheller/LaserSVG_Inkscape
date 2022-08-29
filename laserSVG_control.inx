@@ -1,33 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
-    <name>Parameter Control</name>
-    <id>org.inkscape.filter.lasersvg_control</id>
-    <param name="tab" type="notebook">
-        <page name="Options" gui-text="Options">
-            <param name="material_thickness" type="float" precision="2" min="0" max="30" gui-text="Material thickness">3</param>
-            <param name="kerf_width" type="float" min="0" max="25" gui-text="Kerf">0.0</param>
-            <param name="action" type="optiongroup" gui-text="Default laser operation">
-                <option value="cut">Cut</option>
-                <option value="engrave">Engrave</option>
-            </param>
-            <param type="bool" name="interactive" gui-text="Make file interactive">true</param>
-        </page>
-        <page name="Scale" gui-text="Scale">
-            <param name="scale" type="float" min="50" max="500" gui-text="Scale">100</param>    
-        </page>
-        <page name="Help" gui-text="Help">
-            <label xml:space="preserve">This extension lets you control the main parameters of a LaserSVG file. It allows you to change the material thickness, kerf, and joint-type. When changing these values, the rendering will update. 
-Making the file interactive means that LaserSVG adds the necessary code to the file, such that you can modify the main parameters in your web-browser.</label>
-        </page>
-    </param>        
-
-    <effect needs-document="true" needs-live-preview="true" implements-custom-gui="true">
-        <object-type>all</object-type>
-                <effects-menu>
-                    <submenu name="LaserSVG"/>
-                </effects-menu>
-    </effect>
-    <script>
-        <command location="inx" interpreter="python">laserSVG_control.py</command>
-    </script>
+  <_name>Parameter Control</_name>
+  <id>org.inkscape.filter.lasersvg_control</id>
+  <param name="tab" type="notebook">
+    <page name="options" _gui-text="Options">
+      <param name="material_thickness" type="float" precision="2" min="0" max="30" gui-text="Material thickness">3</param>
+      <param name="kerf_width" type="float" min="0" max="25" gui-text="Kerf">0.0</param>
+      <param name="action" type="optiongroup" gui-text="Default laser operation">
+        <option value="cut">Cut</option>
+        <option value="engrave">Engrave</option>
+      </param>
+      <param type="bool" name="interactive" gui-text="Make file interactive">true</param>
+    </page>
+    <page name="scale_page" gui-text="Scale">
+        <param name="scale" type="float" min="50" max="500" gui-text="Scale">100</param>    
+    </page>
+    <page name="help" _gui-text="Help">
+      <param name="help_text" type="description">This extension lets you control the main parameters of a LaserSVG file. It allows you to change the material thickness, kerf, and joint-type. When changing these values, the rendering will update. 
+        Making the file interactive means that LaserSVG adds the necessary code to the file, such that you can modify the main parameters in your web-browser.</param>
+    </page>
+  </param>
+  <effect needs-document="true" needs-live-preview="true">
+    <object-type>all</object-type>
+      <effects-menu>
+        <submenu name="LaserSVG"/>
+      </effects-menu>
+  </effect>
+  <script>
+    <command reldir="inx" interpreter="python">laserSVG_control.py</command>
+  </script>
 </inkscape-extension>
