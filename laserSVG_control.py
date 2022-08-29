@@ -31,7 +31,7 @@ class LaserSVG(inkex.EffectExtension):
     LASER_NAMESPACE = "http://www.heller-web.net/lasersvg/"
     LASER_PREFIX = "laser"
     LASER = "{%s}" % LASER_NAMESPACE
-    laserSVGScriptURL = "http://www2.heller-web.net/lasersvg/lasersvg.js"
+    laserSVGScriptURL = "https://florianheller.github.io/lasersvg/lasersvg.js"
 
     oldThickness = 0
     def add_arguments(self, pars):
