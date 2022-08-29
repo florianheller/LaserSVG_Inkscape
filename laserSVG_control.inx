@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
-  <_name>Parameter Control</_name>
+  <name>Parameter Control</name>
   <id>org.inkscape.filter.lasersvg_control</id>
   <param name="tab" type="notebook">
     <page name="options" _gui-text="Options">
