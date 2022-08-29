@@ -21,6 +21,7 @@
 # see https://launchpadlibrarian.net/235367843/debug_sel_nodes.py for more details
 
 import inkex
+import inkex.elements 
 import re
 from lxml import etree
 from math import sqrt, atan2, pi, sin, cos, trunc, degrees, copysign, isclose
@@ -48,7 +49,7 @@ class LaserSVG(inkex.EffectExtension):
 
     def effect(self):
         etree.register_namespace("laser", self.LASER_NAMESPACE)
-        inkex.utils.NSS["laser"] = self.LASER_NAMESPACE
+        inkex.elements._utils.NSS["laser"] = self.LASER_NAMESPACE
 
         self.threshold = float(self.options.tolerance)
         # If nothing is selected, we can't do anything
@@ -126,7 +127,7 @@ class LaserSVG(inkex.EffectExtension):
         for command in path.original_path.to_relative():
             # if the length matches, we replace the args with the according tags
            template.append(self.tagCommand(command, length))
-        path.set(inkex.addNS("template", self.LASER_PREFIX),template)
+        path.set(inkex.elements._utils.addNS("template", self.LASER_PREFIX),template)
 
     def parse_selected_nodes(self, nodes):
         result = {}
@@ -311,7 +312,7 @@ class LaserSVG(inkex.EffectExtension):
                 
 
                 # The new endpoint for the ll segment is thus gap_center.x-{thickness*cos(gap.angle),gap_center.y-{thickness*sin(gap.angle)}}
-                path.set(inkex.addNS("template", self.LASER_PREFIX),template)
+                path.set(inkex.elements._utils.addNS("template", self.LASER_PREFIX),template)
 
                 # template[index-1] = self.tagCommandWithCalculation(command, )
                 # inkex.utils.debug(template[index].end_point)
@@ -369,7 +370,7 @@ class LaserSVG(inkex.EffectExtension):
             if index in segments:
                 template[index] = self.tagCommand(command, float(self.document.getroot().get("{}material-thickness".format(self.LASER))))
 
-        path.set(inkex.addNS("template", self.LASER_PREFIX),template)
+        path.set(inkex.elements._utils.addNS("template", self.LASER_PREFIX),template)
 
     # returns a command with tagged parameters including a calculation
     def tagCommandWithCalculation(self, command, calculation):

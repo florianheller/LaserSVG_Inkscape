@@ -22,6 +22,7 @@
 import math
 
 import inkex
+import inkex.elements 
 from lxml import etree
 import re
 
@@ -49,26 +50,26 @@ class LaserSVG(inkex.EffectExtension):
 
         # Register the namespace prefix both with etree and inkscape
         etree.register_namespace("laser", self.LASER_NAMESPACE)
-        inkex.utils.NSS["laser"] = self.LASER_NAMESPACE
+        inkex.elements._utils.NSS["laser"] = self.LASER_NAMESPACE
 
         #Save the old thickness 
-        oldValue = self.document.getroot().get(inkex.addNS("material-thickness", self.LASER_PREFIX))
+        oldValue = self.document.getroot().get(inkex.elements._utils.addNS("material-thickness", self.LASER_PREFIX))
         if oldValue is not None:
             self.oldThickness  = float(oldValue)
 
         # Set/Update the global thickness in the SVG root node
-        self.document.getroot().set(inkex.addNS("material-thickness", self.LASER_PREFIX), self.options.material_thickness)
+        self.document.getroot().set(inkex.elements._utils.addNS("material-thickness", self.LASER_PREFIX), self.options.material_thickness)
 
         # Set/Update the global kerf value in the SVG root node
-        self.document.getroot().set(inkex.addNS("kerf", self.LASER_PREFIX), self.options.kerf_width)
+        self.document.getroot().set(inkex.elements._utils.addNS("kerf", self.LASER_PREFIX), self.options.kerf_width)
 
         #Set/Update the gobal laser action in the SVG root node
-        self.document.getroot().set(inkex.addNS("action", self.LASER_PREFIX), self.options.action)
+        self.document.getroot().set(inkex.elements._utils.addNS("action", self.LASER_PREFIX), self.options.action)
         
         # adjust the thickness on all elements 
         self.adjust_element_thickness(self.options.material_thickness)
 
-        # inkex.utils.debug(self.document.getroot().nsmap)
+        #inkex.utils.debug(self.document.getroot().nsmap)
 
         if self.options.interactive == 'true':
             # Check if there is a reference to the JS and CSS already, otherwise add it
@@ -79,7 +80,7 @@ class LaserSVG(inkex.EffectExtension):
                 scriptElement.set("type", "text/javascript")
                 scriptElement.set("xlink:href",  self.laserSVGScriptURL)
 
-        #inkex.utils.debug(etree.tostring(self.document.getroot(),pretty_print=True))
+        # inkex.utils.debug(etree.tostring(self.document.getroot(),pretty_print=True))
 
         # #rect.set(XHTML + "thickness-adjust","width")
         # inkex.utils.debug(etree.tostring(rect))
@@ -98,24 +99,24 @@ class LaserSVG(inkex.EffectExtension):
             # Adjust position of origin is specified
             newThicknessF = float(newThickness)
             originX, originY, centerX, centerY = 0, 0, 0, 0
-            origin = node.get(inkex.addNS("origin", self.LASER_PREFIX))
+            origin = node.get(inkex.elements._utils.addNS("origin", self.LASER_PREFIX))
 
             if origin is not None:
-                if node.get(inkex.addNS("x", self.LASER_PREFIX)) is None:
+                if node.get(inkex.elements._utils.addNS("x", self.LASER_PREFIX)) is None:
                     centerX = float(node.get("x")) + (self.oldThickness/2)
-                    node.set(inkex.addNS("centerX", self.LASER_PREFIX), centerX)
-                    node.set(inkex.addNS("x", self.LASER_PREFIX), node.get("x"))
+                    node.set(inkex.elements._utils.addNS("centerX", self.LASER_PREFIX), centerX)
+                    node.set(inkex.elements._utils.addNS("x", self.LASER_PREFIX), node.get("x"))
  
-                centerX = float(node.get(inkex.addNS("centerX", self.LASER_PREFIX)))
-                originX = float(node.get(inkex.addNS("x", self.LASER_PREFIX)))
+                centerX = float(node.get(inkex.elements._utils.addNS("centerX", self.LASER_PREFIX)))
+                originX = float(node.get(inkex.elements._utils.addNS("x", self.LASER_PREFIX)))
 
-                if node.get(inkex.addNS("y", self.LASER_PREFIX)) is None:
+                if node.get(inkex.elements._utils.addNS("y", self.LASER_PREFIX)) is None:
                     centerY = float(node.get("y")) + (self.oldThickness/2)
-                    node.set(inkex.addNS("centerY", self.LASER_PREFIX), centerY)
-                    node.set(inkex.addNS("y", self.LASER_PREFIX), node.get("y"))
+                    node.set(inkex.elements._utils.addNS("centerY", self.LASER_PREFIX), centerY)
+                    node.set(inkex.elements._utils.addNS("y", self.LASER_PREFIX), node.get("y"))
                 
-                centerY = float(node.get(inkex.addNS("centerY", self.LASER_PREFIX)))
-                originY = float(node.get(inkex.addNS("y", self.LASER_PREFIX)))
+                centerY = float(node.get(inkex.elements._utils.addNS("centerY", self.LASER_PREFIX)))
+                originY = float(node.get(inkex.elements._utils.addNS("y", self.LASER_PREFIX)))
 
                 if origin == "bottom":
                     if adjust_setting == "height" or adjust_setting == "both":
@@ -142,7 +143,7 @@ class LaserSVG(inkex.EffectExtension):
 
     def adjust_path_thickness(self, newThickness):
         for node in self.document.getroot().iterfind(".//*[@{}template]".format(self.LASER)):
-            template = node.get(inkex.addNS("template", self.LASER_PREFIX))
+            template = node.get(inkex.elements._utils.addNS("template", self.LASER_PREFIX))
             pattern = re.compile(r'[{](.*?)[}]')
             evaluate = lambda x: str(eval(x.group(1),{},{"thickness":float(self.options.material_thickness)}))
             result = re.sub(pattern, evaluate, template)

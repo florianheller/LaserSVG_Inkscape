@@ -22,6 +22,7 @@
 import math
 
 import inkex
+import inkex.elements 
 from lxml import etree
 
 class LaserSVGPrimitives(inkex.EffectExtension):
@@ -44,26 +45,26 @@ class LaserSVGPrimitives(inkex.EffectExtension):
         
         # Register the namespace prefix both with etree and inkscape
         etree.register_namespace("laser", self.LASER_NAMESPACE)
-        inkex.utils.NSS["laser"] = self.LASER_NAMESPACE
+        inkex.elements._utils.NSS["laser"] = self.LASER_NAMESPACE
 
         for elementID in self.options.ids:
             element = self.svg.getElementById(elementID)
             if element.tag == "{http://www.w3.org/2000/svg}rect":
                 self.rectangleSettings(element, self.options)
                 if self.options.rect_kerf_adjust != "none":
-                    element.set(inkex.addNS("kerf-adjust", self.LASER_PREFIX),self.options.rect_kerf_adjust)
+                    element.set(inkex.elements._utils.addNS("kerf-adjust", self.LASER_PREFIX),self.options.rect_kerf_adjust)
                 else: 
-                    element.attrib.pop(inkex.addNS("kerf-adjust", self.LASER_PREFIX), None) # Remove it if nothing to do
+                    element.attrib.pop(inkex.elements._utils.addNS("kerf-adjust", self.LASER_PREFIX), None) # Remove it if nothing to do
 
                 if self.options.rect_origin == "":
-                    element.attrib.pop(inkex.addNS("origin", self.LASER_PREFIX), None) # Remove it if nothing to do
+                    element.attrib.pop(inkex.elements._utils.addNS("origin", self.LASER_PREFIX), None) # Remove it if nothing to do
                 else:
-                    element.set(inkex.addNS("origin", self.LASER_PREFIX),self.options.rect_origin)
+                    element.set(inkex.elements._utils.addNS("origin", self.LASER_PREFIX),self.options.rect_origin)
 
             if self.options.action == "file": 
-                element.attrib.pop(inkex.addNS("action", self.LASER_PREFIX), None) # Remove it if nothing to do
+                element.attrib.pop(inkex.elements._utils.addNS("action", self.LASER_PREFIX), None) # Remove it if nothing to do
             else:
-                element.set(inkex.addNS("action", self.LASER_PREFIX),self.options.action)
+                element.set(inkex.elements._utils.addNS("action", self.LASER_PREFIX),self.options.action)
 
 
         
@@ -91,7 +92,7 @@ class LaserSVGPrimitives(inkex.EffectExtension):
         #         # place the {thickness} label at the repective place in the path template
 
     def rectangleSettings(self, element, options):
-        element.set(inkex.addNS("thickness-adjust", self.LASER_PREFIX),options.rect_adjustment)
+        element.set(inkex.elements._utils.addNS("thickness-adjust", self.LASER_PREFIX),options.rect_adjustment)
 
 if __name__ == '__main__':
     LaserSVGPrimitives().run()
