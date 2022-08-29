@@ -74,7 +74,7 @@ class LaserSVG(inkex.EffectExtension):
         if self.options.interactive == 'true':
             # Check if there is a reference to the JS and CSS already, otherwise add it
             # While workin on the file, Inkscape requires the SVG namespace in front of SVG element, even though the prefix will be removed while saving. 
-            if not self.document.getroot().findall(".//{http://www.w3.org/2000/svg}script[@xlink:href='http://www2.heller-web.net/lasersvg/lasersvg.js']"):
+            if not self.document.getroot().findall(".//{http://www.w3.org/2000/svg}script[@xlink:href='https://florianheller.github.io/lasersvg/lasersvg.js']"):
                 scriptElement = etree.SubElement(self.document.getroot(), "script")
                 # inkex.utils.debug(scriptElement.localName)
                 scriptElement.set("type", "text/javascript")
